@@ -1,0 +1,8 @@
+# Windows / OneDrive clutter
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# local test copies
+_*.html
+_*.py
