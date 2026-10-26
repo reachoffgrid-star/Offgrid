@@ -38,7 +38,7 @@
   nav a:hover, nav a:focus-visible, nav a.active { color: var(--ivory); outline: none; }
   nav a:hover::after, nav a:focus-visible::after, nav a.active::after { left: 0; right: 0; }
 
-  /* ---------- Hero: smog, then suction, then clean air ---------- */
+  /* ---------- Hero: clean air behind glass ---------- */
   /* a thick pane of icy glass with rounded corners, frosted with pale fog, blue light catching its edges */
   #hero { position: relative; width: 100%; height: clamp(420px, 80vh, 860px); overflow: hidden;
     background: radial-gradient(ellipse 90% 80% at 50% 50%, #7c8f78 0%, #65775f 70%, #4f5d4b 100%);
@@ -175,8 +175,6 @@
     <canvas id="vapour"></canvas>
     <canvas id="drops"></canvas>
     <div id="stage"><div id="title"><h1 aria-label="offgrid"></h1><p id="sub">Air Purifiers</p></div></div>
-    <canvas id="smog"></canvas>
-    <canvas id="dust"></canvas>
   </main>
 
   <section id="products" aria-label="Products">
@@ -254,7 +252,6 @@
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const heroEl = document.getElementById('hero');
   const VW = () => heroEl.clientWidth, VH = () => heroEl.clientHeight;      // everything is sized to the hero, not the window
-  const HOLD = 500, SUCK = 1100, SPEED = 4;            // ms of heavy smog, then ms of suction
 
   /* ---------- title ---------- */
   const h1 = document.querySelector('h1');
@@ -266,59 +263,11 @@
     setTimeout(() => document.getElementById('sub').classList.add('in'), reduce ? 0 : letters.length * 140 + 300);
   }
 
-  /* ---------- smog shader ---------- */
-  const smog = document.getElementById('smog');
-  const gl = smog.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true });
   const NOISE = `
     float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
     float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f);
       return mix(mix(h(i), h(i+vec2(1.,0.)), f.x), mix(h(i+vec2(0.,1.)), h(i+vec2(1.,1.)), f.x), f.y); }
     float fbm(vec2 p){ float v = 0., a = .5; for (int i = 0; i < 5; i++){ v += a*n(p); p = p*2.03 + vec2(1.7, 9.2); a *= .5; } return v; }`;
-  let uR, uT, uC;
-  if (gl) {
-    const mk = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s)); return s; };
-    const pr = gl.createProgram();
-    gl.attachShader(pr, mk(gl.VERTEX_SHADER, 'attribute vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }'));
-    gl.attachShader(pr, mk(gl.FRAGMENT_SHADER, `
-      precision highp float;
-      uniform vec2 r; uniform float t, clear;
-      ${NOISE}
-      void main(){
-        vec2 p = (gl_FragCoord.xy - .5*r) / min(r.x, r.y);
-        float d = length(p);
-
-        // suction: the pattern streams inward and winds toward the intake at the centre
-        float pull = clear*clear*6.;
-        float ang  = clear * 3.2 / (d + .45);
-        float c = cos(ang), s = sin(ang);
-        vec2 q = mat2(c,-s,s,c) * p * (1. + pull);
-        q += vec2(t*.05, -t*.025);
-
-        float w = fbm(q*3. + t*.06);
-        float f = fbm(q*1.5 + vec2(t*.035, 0.) + w*.9);
-        float dens = smoothstep(.2, .66, f);
-
-        vec3 dark = vec3(.18,.12,.07), mid = vec3(.42,.29,.17), haze = vec3(.66,.5,.31);
-        vec3 col = mix(dark, mid, smoothstep(.25, .7, f));
-        col = mix(col, haze, smoothstep(.6, .95, f) * .65);
-        col *= .85 + .3 * fbm(q*6. - t*.1);                       // grit
-
-        float rad = clear*2.3 - .5;                                // the cleared hole grows from the intake
-        float hole = smoothstep(rad, rad + .5, d);
-        float al = mix(.93, 1., dens) * hole;
-
-        float rim = exp(-pow((d - rad - .12) * 5., 2.)) * sin(3.14159 * clamp(clear, 0., 1.));
-        vec3 glow = vec3(.95,.86,.7) * rim * .5;
-        gl_FragColor = vec4(col*al + glow, clamp(al + rim*.4, 0., 1.));
-      }`));
-    gl.linkProgram(pr); gl.useProgram(pr);
-    const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
-    const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
-    uR = gl.getUniformLocation(pr, 'r'); uT = gl.getUniformLocation(pr, 't'); uC = gl.getUniformLocation(pr, 'clear');
-  } else {
-    smog.style.background = '#4a3321';
-  }
 
   /* ---------- smoke wisps + vapour (the clean-air backdrop) ---------- */
   const vap = document.getElementById('vapour');
@@ -468,64 +417,10 @@
   buildDrops(); addEventListener('resize', buildDrops);
   requestAnimationFrame(dropsFrame);
 
-  /* ---------- dust specks that get pulled into the intake ---------- */
-  const dust = document.getElementById('dust'), dctx = dust.getContext('2d');
-  const COLS = ['rgba(46,31,20,', 'rgba(74,51,33,', 'rgba(110,80,48,', 'rgba(52,58,54,'];
-  let specks = [], DW = 0, DH = 0, dpr = 1;
-  function spawn() {
-    return { x: Math.random() * DW, y: Math.random() * DH, s: (.6 + Math.random() * 2.2) * dpr,
-             v: (.15 + Math.random() * .5) * dpr, a: .25 + Math.random() * .6, c: COLS[(Math.random() * COLS.length) | 0], ph: Math.random() * 6.28, gone: false };
-  }
-  function resize() {
-    dpr = Math.min(devicePixelRatio || 1, 2);
-    DW = dust.width = smog.width = Math.floor(VW() * dpr);
-    DH = dust.height = smog.height = Math.floor(VH() * dpr);
-    if (gl) gl.viewport(0, 0, DW, DH);
-    const n = Math.round(VW() * VH() / 2200);
-    specks = Array.from({ length: n }, spawn);
-  }
-  resize(); addEventListener('resize', resize);
-
-  /* ---------- timeline ---------- */
-  const ease = x => x * x * (1.4 - .4 * x);                       // slow start, hard pull at the end
-  let t0 = 0, last = 0, finished = false;
-  function frame(now) {
-    if (!t0) { t0 = last = now; }
-    const dt = Math.min(.05, (now - last) / 1000); last = now;
-    const k = reduce ? 1 : Math.min(1, Math.max(0, (now - t0 - HOLD) / SUCK));
-    const clear = ease(k);
-
-    if (gl) {
-      gl.viewport(0, 0, DW, DH); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.uniform2f(uR, DW, DH); gl.uniform1f(uT, SPEED * (now - t0) / 1000); gl.uniform1f(uC, clear);
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-    }
-
-    dctx.clearRect(0, 0, DW, DH);
-    const cx = DW / 2, cy = DH / 2;
-    for (const p of specks) {
-      if (p.gone) continue;
-      if (clear > 0) {
-        const dx = cx - p.x, dy = cy - p.y, dist = Math.hypot(dx, dy) || 1;
-        const f = (clear * clear * 900 * dpr) / (dist * .02 + 40);
-        p.x += (dx / dist) * f * dt * 60 * .05 * 6 + (-dy / dist) * f * dt * 60 * .05 * 3;      // inward + swirl
-        p.y += (dy / dist) * f * dt * 60 * .05 * 6 + (dx / dist) * f * dt * 60 * .05 * 3;
-        if (dist < 14 * dpr) { p.gone = true; continue; }
-      } else {
-        p.x += p.v * Math.sin(p.ph + now * .0003) * .6 + p.v * .4;
-        p.y += p.v * Math.cos(p.ph + now * .00025) * .4;
-        if (p.x > DW + 10) p.x = -10; if (p.y > DH + 10) p.y = -10; if (p.y < -10) p.y = DH + 10;
-      }
-      dctx.fillStyle = p.c + (p.a * (1 - clear * .5)) + ')';
-      dctx.fillRect(p.x, p.y, p.s, p.s);
-    }
-
-    if (clear > .55) showVapour();
-    if (clear > .78) showTitle();
-    if (k >= 1 && !finished) { finished = true; showVapour(); smog.style.display = 'none'; dust.style.display = 'none'; showTitle(); return; }
-    requestAnimationFrame(frame);
-  }
-  (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(() => requestAnimationFrame(frame));
+  /* ---------- start: the clean-air hero fades in, then the title ---------- */
+  showVapour();
+  const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+  Promise.race([fontsReady, new Promise(r => setTimeout(r, 800))]).then(() => setTimeout(showTitle, reduce ? 0 : 400));
 })();
 </script>
 </body>
