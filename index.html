@@ -284,7 +284,7 @@
   <div class="aqi-card reveal" id="aqiCard">
     <div class="aqi-top">
       <p class="eyebrow">Live air quality</p>
-      <p class="aqi-where" id="aqiWhere">Finding your city</p>
+      <p class="aqi-where" id="aqiWhere">Finding your location</p>
     </div>
     <div class="aqi-main">
       <div class="aqi-num" id="aqiNum">&ndash;<small>US AQI</small></div>
@@ -296,14 +296,8 @@
     </div>
     <div class="aqi-scale" aria-hidden="true"><span id="aqiMark"></span></div>
     <div class="aqi-ticks" aria-hidden="true"><span>Good</span><span>Moderate</span><span>Sensitive</span><span>Unhealthy</span><span>Very</span><span>Hazardous</span></div>
-    <div class="aqi-cities" id="aqiCities" role="group" aria-label="Check another city">
-      <button type="button" data-geo>Use my location</button>
-      <button type="button" data-city="Delhi">Delhi</button>
-      <button type="button" data-city="Mumbai">Mumbai</button>
-      <button type="button" data-city="Hyderabad">Hyderabad</button>
-      <button type="button" data-city="Bengaluru">Bengaluru</button>
-      <button type="button" data-city="Chennai">Chennai</button>
-      <button type="button" data-city="Kolkata">Kolkata</button>
+    <div class="aqi-cities" id="aqiCities" hidden>
+      <button type="button" data-geo>Show the air where I am</button>
     </div>
     <div class="aqi-foot">
       <a class="cta" href="air-purifiers.html">Protect your breathing</a>
@@ -758,7 +752,6 @@
   /* ---------- Live air quality: real readings for the visitor's city, coloured by the US AQI bands ---------- */
   const aqiCard = document.getElementById('aqiCard');
   if (aqiCard) {
-    const CITIES = { Delhi: [28.6139, 77.209], Mumbai: [19.076, 72.8777], Hyderabad: [17.385, 78.4867], Bengaluru: [12.9716, 77.5946], Chennai: [13.0827, 80.2707], Kolkata: [22.5726, 88.3639] };
     const BANDS = [
       [50,  'Good',                           '#3fa36b', 'Clean air today. It can turn fast, so keep yours close.'],
       [100, 'Moderate',                       '#d6b23a', 'Acceptable for most, but sensitive lungs can already feel it.'],
@@ -774,7 +767,6 @@
       const lo = edges[k], hi = edges[k + 1], f = Math.min(1, Math.max(0, (Math.min(v, 500) - lo) / (hi - lo)));
       return ((k + f) / 6 * 100) + '%';
     };
-    const setActive = key => [...$('aqiCities').children].forEach(b => b.classList.toggle('on', (b.dataset.city || (b.hasAttribute('data-geo') ? 'geo' : '')) === key));
 
     function show(d, place) {
       const v = Math.round(d.aqi), b = band(v);
@@ -794,12 +786,12 @@
       aqiCard.style.setProperty('--aqi', '#8a8494');
       $('aqiNum').innerHTML = '&ndash;<small>US AQI</small>';
       $('aqiLevel').textContent = 'Unavailable';
-      $('aqiMsg').textContent = 'We couldn\u2019t reach the live air quality feed for ' + place + '. Try another city.';
+      $('aqiMsg').textContent = 'We couldn\u2019t reach the live air quality feed just now. Please try again in a moment.';
       $('aqiExtra').textContent = '';
       $('aqiWhere').textContent = place;
     }
-    async function load(lat, lon, place, key) {
-      setActive(key);
+    async function load(lat, lon, place) {
+      $('aqiCities').hidden = true;
       $('aqiWhere').textContent = place;
       const ck = 'aqi:' + lat.toFixed(2) + ',' + lon.toFixed(2);
       try {
@@ -816,29 +808,35 @@
         show(d, place);
       } catch (e) { failed(place); }
     }
-    const loadCity = name => load(CITIES[name][0], CITIES[name][1], name, name);
 
-    $('aqiCities').addEventListener('click', e => {
-      const b = e.target.closest('button');
-      if (!b) return;
-      if (b.dataset.city) return loadCity(b.dataset.city);
-      if (!navigator.geolocation) return;
-      $('aqiWhere').textContent = 'Locating you';
+    // if we can't tell where the visitor is, ask the browser (the visitor sees a permission prompt)
+    function askBrowser() {
+      if (!navigator.geolocation) return noLocation();
+      $('aqiWhere').textContent = 'Finding your location';
       navigator.geolocation.getCurrentPosition(
-        p => load(p.coords.latitude, p.coords.longitude, 'Your location', 'geo'),
-        () => { $('aqiWhere').textContent = 'Location blocked, pick a city'; },
+        p => load(p.coords.latitude, p.coords.longitude, 'Your location'),
+        noLocation,
         { timeout: 10000, maximumAge: 600000 });
-    });
+    }
+    function noLocation() {
+      aqiCard.style.setProperty('--aqi', '#8a8494');
+      $('aqiWhere').textContent = 'Location needed';
+      $('aqiLevel').textContent = 'Where are you?';
+      $('aqiMsg').textContent = 'Allow location to see the live air quality right where you are.';
+      $('aqiExtra').textContent = '';
+      $('aqiCities').hidden = false;
+    }
+    $('aqiCities').addEventListener('click', e => { if (e.target.closest('[data-geo]')) askBrowser(); });
 
-    // first reading: the visitor's city from the server (no permission prompt), else Delhi
+    // the visitor's city from the server first (no prompt); if that isn't available, ask the browser
     (async () => {
       try {
         if (!location.protocol.startsWith('http')) throw 0;
         const ctl = new AbortController(); setTimeout(() => ctl.abort(), 2500);
         const g = await (await fetch('/api/geo', { signal: ctl.signal })).json();
-        if (g && g.lat != null && g.lon != null) return load(g.lat, g.lon, g.city || 'Your area', 'ip');
+        if (g && g.lat != null && g.lon != null) return load(g.lat, g.lon, g.city || 'Your area');
         throw 0;
-      } catch (e) { loadCity('Delhi'); }
+      } catch (e) { askBrowser(); }
     })();
   }
 
