@@ -161,6 +161,24 @@
     border-radius: 999px; font-size: .82em; letter-spacing: 0; text-indent: 0; vertical-align: middle;
     background: rgba(247,243,233,.12); color: inherit; transition: background .3s, color .3s; }
   .cart-count.has { background: var(--sage); color: #232826; }
+
+  /* ---------- FAQ ---------- */
+  #faq { max-width: 860px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 56px) clamp(64px, 9vw, 120px); }
+  #faq .faq-head { text-align: center; margin-bottom: clamp(24px, 4vw, 44px); }
+  #faq .faq-head p { font-size: .7rem; letter-spacing: .45em; text-indent: .45em; text-transform: uppercase; color: #5f7a5a; }
+  #faq .faq-head h2 { margin-top: .8rem; font-weight: 400; font-size: clamp(1.4rem, 3.6vw, 2.4rem); letter-spacing: .18em; text-indent: .18em; text-transform: uppercase; color: var(--graphite); }
+  #faq .faq-head .line { width: 56px; height: 2px; border-radius: 2px; margin: 1.1rem auto 0; background: var(--graphite); opacity: .55; }
+  .qa { border-radius: 16px; background: var(--ivory); border: 1px solid rgba(52,58,54,.12); box-shadow: 0 6px 20px rgba(52,58,54,.08); margin-bottom: 12px; overflow: hidden; }
+  .qa summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 18px;
+    padding: 20px 22px; font-weight: 500; font-size: clamp(.82rem, 1.5vw, .95rem); letter-spacing: .1em; text-transform: uppercase; color: var(--graphite); }
+  .qa summary::-webkit-details-marker { display: none; }
+  .qa summary::after { content: "+"; flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+    border: 1px solid rgba(52,58,54,.35); font-size: 1.1rem; letter-spacing: 0; transition: transform .35s cubic-bezier(.2,.8,.2,1), background .3s, color .3s; }
+  .qa[open] summary::after { transform: rotate(45deg); background: var(--graphite); color: var(--ivory); border-color: var(--graphite); }
+  .qa summary:hover, .qa summary:focus-visible { color: #4d6649; outline: none; }
+  .qa .ans { padding: 0 22px 22px; font-family: Georgia, "Times New Roman", serif; font-size: 1rem; line-height: 1.75; color: rgba(52,58,54,.82); }
+  .qa .ans p + p { margin-top: .7rem; }
+  .fill { background: rgba(169,188,165,.35); border-bottom: 1px dashed #5f7a5a; padding: 0 .2em; }   /* a detail still to be filled in */
 </style>
 </head>
 <body>
@@ -244,6 +262,40 @@
         </div>
       </article>
     </div>
+  </section>
+
+  <section id="faq" aria-label="Frequently asked questions">
+    <header class="faq-head"><p>Good to know</p><h2>Questions</h2><div class="line"></div></header>
+
+    <details class="qa">
+      <summary>Does it give off radiation? Is it safe to sleep with?</summary>
+      <div class="ans">
+        <p>OFFGRID runs on a small rechargeable battery, like earbuds or a phone, and does not use any ionising radiation. <span class="fill">[Add your safety testing here, e.g. the ozone or emissions certification.]</span></p>
+        <p>For sleep, take the necklace off and keep the purifier on your bedside table or near your pillow. As with any necklace on a cord, it should not be worn while you sleep.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary>Can I take it on a flight? Will it explode?</summary>
+      <div class="ans">
+        <p>You can bring it with you on a flight. Like other devices with a lithium battery, it belongs in your carry-on bag, not your checked luggage, and you can switch it off if the crew asks.</p>
+        <p>The battery is <span class="fill">[capacity, e.g. 500 mAh]</span> and certified to <span class="fill">[battery standard, e.g. UN38.3]</span>, the same kind of test phones and earbuds pass before they are allowed to fly.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary>How long does a charge last?</summary>
+      <div class="ans">
+        <p>A full charge lasts about <span class="fill">[X] hours</span> and takes about <span class="fill">[X] hours</span> to charge over <span class="fill">[USB-C]</span>. The battery is rated for around <span class="fill">[X] charge cycles</span>.</p>
+      </div>
+    </details>
+
+    <details class="qa">
+      <summary>Is it waterproof?</summary>
+      <div class="ans">
+        <p><span class="fill">[Water rating, e.g. IPX4: splash resistant, not waterproof.]</span> Keep it away from the shower, the pool and heavy rain, and dry it off if it gets wet.</p>
+      </div>
+    </details>
   </section>
 
 <script src="assets/cart.js"></script>
