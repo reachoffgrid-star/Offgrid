@@ -202,7 +202,7 @@
   .founder .ph { aspect-ratio: 25 / 21; display: grid; place-items: center;
     background: linear-gradient(115deg, transparent 30%, rgba(243,239,247,.06) 42%, transparent 54%),
                 radial-gradient(ellipse 70% 60% at 50% 40%, rgba(111,77,156,.28), transparent 70%), linear-gradient(160deg, #1c1228, #0d0915); }
-  .founder img.ph { display: block; width: 100%; object-fit: cover; object-position: 50% 22%; }
+  .founder img.ph { display: block; width: 100%; height: auto; object-fit: cover; object-position: 50% 22%; }
   .founder .ph span { font-size: .62rem; letter-spacing: .28em; text-indent: .28em; text-transform: uppercase; color: rgba(243,239,247,.38); }
   .founder .meta { padding: 14px 18px 18px; }
   .founder h3 { font-weight: 500; font-size: .9rem; letter-spacing: .2em; text-transform: uppercase; color: #f3eff7; }
