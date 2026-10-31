@@ -212,6 +212,7 @@
   .founder .ph { aspect-ratio: 3 / 2; display: grid; place-items: center;
     background: linear-gradient(115deg, transparent 30%, rgba(243,239,247,.06) 42%, transparent 54%),
                 radial-gradient(ellipse 70% 60% at 50% 40%, rgba(111,77,156,.28), transparent 70%), linear-gradient(160deg, #1c1228, #0d0915); }
+  .founder img.ph { display: block; width: 100%; object-fit: cover; object-position: 50% 22%; }
   .founder .ph span { font-size: .62rem; letter-spacing: .28em; text-indent: .28em; text-transform: uppercase; color: rgba(243,239,247,.38); }
   .founder .meta { padding: 14px 18px 18px; }
   .founder h3 { font-weight: 500; font-size: .9rem; letter-spacing: .2em; text-transform: uppercase; color: #f3eff7; }
@@ -273,7 +274,7 @@
   </div>
   <div class="founders-grid">
       <article class="founder reveal">
-        <div class="ph" role="img" aria-label="Founder photo placeholder"><span>Photo</span></div>
+        <img class="ph photo" src="assets/founders/founder-1.webp" alt="Founder portrait" loading="lazy" decoding="async">
         <div class="meta">
           <h3>Founder name</h3>
           <p class="role">Role</p>
