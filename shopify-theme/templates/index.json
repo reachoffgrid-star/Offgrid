@@ -16,7 +16,7 @@
       "blocks": {
         "p1": { "type": "founder", "settings": { "theme_image": "founder-1.webp", "focus": "object-position: 50% 22%" } },
         "p2": { "type": "founder", "settings": { "theme_image": "founder-2.jpg", "focus": "object-position: 50% 0" } },
-        "p3": { "type": "founder", "settings": {} },
+        "p3": { "type": "founder", "settings": { "theme_image": "founder-3.jpg", "focus": "object-position: 50% 0" } },
         "p4": { "type": "founder", "settings": {} }
       },
       "block_order": ["p1", "p2", "p3", "p4"],
