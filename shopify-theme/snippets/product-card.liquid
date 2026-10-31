@@ -1,0 +1,36 @@
+{%- comment -%}
+  One product in the Air Purifiers grid.
+  A tag like "badge:Pack of 4" on the product shows that text as a badge on the photo.
+{%- endcomment -%}
+{%- liquid
+  assign variant = product.selected_or_first_available_variant
+  assign badge = ''
+  for tag in product.tags
+    if tag contains 'badge:'
+      assign badge = tag | remove_first: 'badge:' | strip
+    endif
+  endfor
+-%}
+<article class="card">
+  <a class="ph photo" href="{{ product.url }}" tabindex="-1">
+    {%- if badge != blank %}<span class="badge">{{ badge | escape }}</span>{% endif -%}
+    {%- if product.featured_image -%}
+      {{ product.featured_image | image_url: width: 900 | image_tag: alt: product.featured_image.alt, loading: 'lazy', sizes: '(max-width: 560px) 50vw, 340px' }}
+    {%- endif -%}
+  </a>
+  <div class="info">
+    <h3><a href="{{ product.url }}">{{ product.title | escape }}</a></h3>
+    <p class="desc">{{ product.description | split: '</p>' | first | strip_html | truncatewords: 40 }}</p>
+    <div class="row">
+      <span class="price">
+        {{- variant.price | money_without_trailing_zeros -}}
+        {%- if variant.compare_at_price > variant.price %} <s class="was">{{ variant.compare_at_price | money_without_trailing_zeros }}</s> <span class="save">Save {{ variant.compare_at_price | minus: variant.price | money_without_trailing_zeros }}</span>{% endif -%}
+      </span>
+      {%- if variant.available -%}
+        <button type="button" data-add-to-cart data-variant-id="{{ variant.id }}" data-name="{{ product.title | escape }}">Add to cart</button>
+      {%- else -%}
+        <button type="button" disabled>Sold out</button>
+      {%- endif -%}
+    </div>
+  </div>
+</article>

@@ -1,0 +1,2 @@
+{%- comment -%} Where "Air Purifiers" and every Shop button go: the link set in Theme settings, else all products in the order they were added. {%- endcomment -%}
+{%- if settings.shop_link != blank -%}{{ settings.shop_link }}{%- else -%}{{ routes.all_products_collection_url }}?sort_by=created-ascending{%- endif -%}

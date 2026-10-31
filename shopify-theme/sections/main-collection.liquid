@@ -1,0 +1,27 @@
+<section id="products" aria-label="Products">
+  <div class="grid">
+    {%- if section.settings.products != blank -%}
+      {%- for product in section.settings.products -%}
+        {%- render 'product-card', product: product -%}
+      {%- endfor -%}
+    {%- else -%}
+      {%- paginate collection.products by 48 -%}
+        {%- for product in collection.products -%}
+          {%- render 'product-card', product: product -%}
+        {%- else -%}
+          <p class="desc">No products yet.</p>
+        {%- endfor -%}
+      {%- endpaginate -%}
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Products",
+  "tag": "div",
+  "settings": [
+    { "type": "product_list", "id": "products", "label": "Products to show", "limit": 24, "info": "Pick products to choose their order. Leave empty to show the whole collection." }
+  ]
+}
+{% endschema %}

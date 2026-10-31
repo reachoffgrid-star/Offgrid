@@ -1,0 +1,413 @@
+{%- liquid
+  assign photos = ''
+  if section.settings.photo_1 != blank
+    assign p1 = section.settings.photo_1 | image_url: width: 2400
+  else
+    assign p1 = 'hero-1.webp' | asset_url
+  endif
+  if section.settings.photo_2 != blank
+    assign p2 = section.settings.photo_2 | image_url: width: 2400
+  else
+    assign p2 = 'hero-2.webp' | asset_url
+  endif
+  if section.settings.photo_3 != blank
+    assign p3 = section.settings.photo_3 | image_url: width: 2400
+  else
+    assign p3 = 'hero-3.webp' | asset_url
+  endif
+  assign photos = p1 | append: '|' | append: p2 | append: '|' | append: p3 | split: '|'
+-%}
+<main id="hero">
+  <canvas id="morph"></canvas>
+  <div id="stage"><div id="shake"><h1 id="title" aria-label="{{ section.settings.title | escape }}"></h1><p id="sub">{{ section.settings.subtitle | escape }}</p></div></div>
+  <nav id="nav" aria-label="Primary">
+    {%- render 'nav-links' -%}
+  </nav>
+  <a id="shop" href="{% render 'shop-url' %}">{{ section.settings.shop_label | escape }}</a>
+</main>
+
+<div id="loader" aria-hidden="true">
+  <i class="panel top"></i><i class="panel bot"></i>
+  <canvas id="wave"></canvas>
+  <div id="bar"><i></i></div>
+</div>
+
+<script>
+(() => {
+  const PAL = { jet: '#050505', amethyst: '#3B0A6B', cyan: '#62A3AE' };
+
+  /* ---------- GL helpers ---------- */
+  const VERT = `attribute vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }`;
+  const NOISE = `
+    float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+    float n(vec2 p){
+      vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f);
+      return mix(mix(h(i), h(i+vec2(1.,0.)), f.x), mix(h(i+vec2(0.,1.)), h(i+vec2(1.,1.)), f.x), f.y);
+    }
+    float fbm(vec2 p){
+      float v = 0., a = .5;
+      for (int i = 0; i < 5; i++){ v += a*n(p); p = p*2.03 + vec2(1.7, 9.2); a *= .5; }
+      return v;
+    }`;
+
+  function makeGL(canvas) {
+    const gl = canvas.getContext('webgl', { antialias: false, alpha: canvas.dataset.alpha === '1', powerPreference: 'high-performance' });
+    if (!gl) return null;
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+    return gl;
+  }
+  function program(gl, frag) {
+    const mk = (type, src) => {
+      const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s));
+      return s;
+    };
+    const pr = gl.createProgram();
+    gl.attachShader(pr, mk(gl.VERTEX_SHADER, VERT));
+    gl.attachShader(pr, mk(gl.FRAGMENT_SHADER, frag));
+    gl.linkProgram(pr); gl.useProgram(pr);
+    const loc = gl.getAttribLocation(pr, 'p');
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+    return pr;
+  }
+  function fit(canvas, gl) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(1, Math.floor(innerWidth * dpr)), hgt = Math.max(1, Math.floor(innerHeight * dpr));
+    if (canvas.width !== w || canvas.height !== hgt) { canvas.width = w; canvas.height = hgt; }
+    gl.viewport(0, 0, w, hgt);
+  }
+
+  /* ---------- Scroll wave field (loader) ---------- */
+  let openStart = 0, heroReady = false;   // morph clock only starts once the hero is revealed
+  const OPEN_MS = 1400;
+  const LOAD_MS = 1200;
+  const loadStart = performance.now();
+  let vortexRunning = true;
+  const waveCanvas = document.getElementById('wave');
+  const wctx = waveCanvas.getContext('2d');
+  const barFill = document.querySelector('#bar i');
+  const panelTop = document.querySelector('.panel.top'), panelBot = document.querySelector('.panel.bot');
+  const morphEl = document.getElementById('morph');
+  const barEl = document.getElementById('bar');
+  const COLORS = ['rgb(66,26,112)', 'rgb(106,70,152)', 'rgb(160,140,192)'];   // amethyst -> dusty lilac (matte)
+  const N = 12000;
+  const parts = Array.from({ length: N }, (_, i) => {
+    const g = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;      // ~gaussian across the band
+    const spark = Math.random() < .14 ? (Math.random() - .5) * 5 : 0;           // loose particles far from the core
+    return {
+      x: Math.random(), band: i % 2, d: g + spark, v: .5 + Math.random() * 1.1,
+      s: .5 + Math.random() * 1.5, a: .2 + Math.random() * .8, hot: Math.random() < .06,
+      c: Math.abs(g) < .35 ? 2 : Math.abs(g) < .75 ? 1 : 0
+    };
+  });
+  let wT = 0, wLast = performance.now();
+  function waveFrame(now) {
+    if (!vortexRunning) return;
+    const dt = Math.min(.05, (now - wLast) / 1000); wLast = now;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const W = Math.floor(innerWidth * dpr), H = Math.floor(innerHeight * dpr);
+    if (waveCanvas.width !== W || waveCanvas.height !== H) { waveCanvas.width = W; waveCanvas.height = H; }
+
+    const oe = openStart ? Math.min(1, (now - openStart) / OPEN_MS) : 0;
+    const open = oe < .5 ? 4*oe*oe*oe : 1 - Math.pow(-2*oe + 2, 3) / 2;
+    wT += dt * (1 + open * 2.5);
+
+    const pr = Math.min(1, (now - loadStart) / LOAD_MS);
+    barFill.style.width = (pr * pr * (3 - 2 * pr) * 100) + '%';
+    barEl.style.opacity = Math.max(0, 1 - open * 3);
+    panelTop.style.transform = `translateY(${-open * 100}%)`;
+    panelBot.style.transform = `translateY(${open * 100}%)`;
+    morphEl.style.transform = `scale(${1 + .4 * (1 - open)})`;
+
+    wctx.clearRect(0, 0, W, H);
+    wctx.globalCompositeOperation = 'source-over';             // plain layering, no additive glow
+    const size = Math.min(W, H);
+    for (const p of parts) {
+      const X = ((p.x + wT * .045 * p.v) % 1) * W;
+      const wave = Math.sin(X / W * 9 + wT * 1.1) * H * .05 + Math.sin(X / W * 22 - wT * .8) * H * .018;
+      const spread = H * .085 * (.55 + .45 * Math.sin(X / W * 6 + wT * .4));
+      const top = p.band === 0;
+      let y = (top ? H * .2 + wave : H * .8 - wave) + p.d * spread;
+      y += (top ? -1 : 1) * open * H * .8;
+      if (y < -10 || y > H + 10) continue;
+      wctx.globalAlpha = p.a * (1 - open * .7);
+      wctx.fillStyle = p.hot ? 'rgb(98,163,174)' : COLORS[p.c];
+      const s = p.s * dpr;
+      wctx.fillRect(X, y, s, s);
+    }
+    wctx.globalAlpha = 1;
+    requestAnimationFrame(waveFrame);
+  }
+  requestAnimationFrame(waveFrame);
+
+  /* ---------- Procedural "images" for the hero ---------- */
+  const W = 1920, H = 1080;
+  let seed = 7;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const mkCanvas = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return [c, c.getContext('2d')]; };
+  function rgba(hex, a) {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
+  }
+  function stars(g, count, alpha = 1) {
+    for (let i = 0; i < count; i++) {
+      g.fillStyle = `rgba(255,255,255,${(.25 + rnd() * .75) * alpha})`;
+      const s = rnd() * 2.2;
+      g.fillRect(rnd() * W, rnd() * H, s, s);
+    }
+  }
+  function ridge(g, base, amp, color, rough) {
+    g.beginPath(); g.moveTo(0, H);
+    let y = base;
+    for (let x = 0; x <= W; x += 12) {
+      y = base + Math.sin(x * .004 + rough) * amp + Math.sin(x * .013 + rough * 2) * amp * .35 + (rnd() - .5) * amp * .12;
+      g.lineTo(x, y);
+    }
+    g.lineTo(W, H); g.closePath(); g.fillStyle = color; g.fill();
+  }
+
+  function sceneSunset() {
+    const [c, g] = mkCanvas();
+    let gr = g.createLinearGradient(0, 0, 0, H);
+    gr.addColorStop(0, PAL.jet); gr.addColorStop(.55, PAL.amethyst); gr.addColorStop(1, '#0b0216');
+    g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    stars(g, 260);
+    const cx = W / 2, cy = H * .5, R = 250;
+    const glow = g.createRadialGradient(cx, cy, R * .3, cx, cy, R * 3);
+    glow.addColorStop(0, rgba(PAL.cyan, .3)); glow.addColorStop(1, rgba(PAL.cyan, 0));
+    g.fillStyle = glow; g.fillRect(0, 0, W, H);
+    const sun = g.createLinearGradient(0, cy - R, 0, cy + R);
+    sun.addColorStop(0, '#c9a6ff'); sun.addColorStop(1, '#6a22b8');
+    g.fillStyle = sun; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
+    g.fillStyle = PAL.amethyst;
+    for (let i = 0; i < 8; i++) g.fillRect(cx - R, cy + 20 + i * 28, R * 2, 3 + i * 2.4);
+    ridge(g, H * .62, 70, '#12032a', 1); ridge(g, H * .72, 55, PAL.jet, 4);
+    g.strokeStyle = rgba(PAL.cyan, .35); g.lineWidth = 1.5;
+    const hz = H * .8;
+    g.fillStyle = PAL.jet; g.fillRect(0, hz, W, H - hz);
+    for (let i = -20; i <= 20; i++) { g.beginPath(); g.moveTo(cx + i * 40, hz); g.lineTo(cx + i * 190, H); g.stroke(); }
+    for (let i = 0; i < 12; i++) { const y = hz + Math.pow(i / 12, 2.2) * (H - hz); g.beginPath(); g.moveTo(0, y); g.lineTo(W, y); g.stroke(); }
+    return c;
+  }
+  function scenePlanet() {
+    const [c, g] = mkCanvas();
+    g.fillStyle = PAL.jet; g.fillRect(0, 0, W, H);
+    const neb = g.createRadialGradient(W * .7, H * .3, 0, W * .7, H * .3, W * .6);
+    neb.addColorStop(0, rgba(PAL.amethyst, .9)); neb.addColorStop(1, rgba(PAL.amethyst, 0));
+    g.fillStyle = neb; g.fillRect(0, 0, W, H);
+    stars(g, 520);
+    const cx = W * .5, cy = H * .55, R = 380;
+    const halo = g.createRadialGradient(cx, cy, R * .95, cx, cy, R * 1.6);
+    halo.addColorStop(0, rgba(PAL.cyan, .28)); halo.addColorStop(1, rgba(PAL.cyan, 0));
+    g.fillStyle = halo; g.fillRect(0, 0, W, H);
+    const pl = g.createRadialGradient(cx - R * .4, cy - R * .4, R * .1, cx, cy, R);
+    pl.addColorStop(0, '#6a22b8'); pl.addColorStop(.6, PAL.amethyst); pl.addColorStop(1, '#07010f');
+    g.fillStyle = pl; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
+    g.save(); g.beginPath(); g.arc(cx, cy, R, 0, 7); g.clip();
+    for (let i = 0; i < 14; i++) { g.fillStyle = rgba(i % 2 ? '#6f4d9c' : '#000', .06 + rnd() * .08); g.fillRect(cx - R, cy - R + i * R / 7, R * 2, 18 + rnd() * 30); }
+    const sh = g.createLinearGradient(cx - R, 0, cx + R, 0); sh.addColorStop(0, 'rgba(0,0,0,0)'); sh.addColorStop(1, 'rgba(0,0,0,.8)');
+    g.fillStyle = sh; g.fillRect(cx - R, cy - R, R * 2, R * 2); g.restore();
+    g.save(); g.translate(cx, cy); g.rotate(-.35); g.scale(1, .22);
+    for (let i = 0; i < 6; i++) { g.strokeStyle = rgba(PAL.cyan, .55 - i * .07); g.lineWidth = 8 - i; g.beginPath(); g.arc(0, 0, R * (1.35 + i * .12), 0, 7); g.stroke(); }
+    g.restore();
+    return c;
+  }
+  function sceneCity() {
+    const [c, g] = mkCanvas();
+    const gr = g.createLinearGradient(0, 0, 0, H);
+    gr.addColorStop(0, PAL.jet); gr.addColorStop(.7, PAL.amethyst); gr.addColorStop(1, '#1a0536');
+    g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    stars(g, 150, .7);
+    for (let layer = 0; layer < 3; layer++) {
+      let x = -20;
+      const baseY = H * (.8 + layer * .08), shade = [.55, .8, 1][layer];
+      while (x < W) {
+        const bw = 60 + rnd() * 120, bh = 160 + rnd() * (420 - layer * 90);
+        g.fillStyle = `rgba(${5 + (2 - layer) * 14},${5},${10 + (2 - layer) * 20},${shade})`;
+        g.fillRect(x, baseY - bh, bw, bh + 200);
+        if (layer > 0) {
+          for (let wy = baseY - bh + 20; wy < baseY - 10; wy += 26)
+            for (let wx = x + 10; wx < x + bw - 10; wx += 18)
+              if (rnd() > .62) { g.fillStyle = rgba(rnd() > .8 ? PAL.cyan : '#b79cff', .3 + rnd() * .55); g.fillRect(wx, wy, 7, 11); }
+        }
+        x += bw + rnd() * 10;
+      }
+    }
+    const haze = g.createLinearGradient(0, H * .6, 0, H); haze.addColorStop(0, 'rgba(98,163,174,0)'); haze.addColorStop(1, 'rgba(110,40,200,.3)');
+    g.fillStyle = haze; g.fillRect(0, H * .6, W, H * .4);
+    return c;
+  }
+  function sceneWaves() {
+    const [c, g] = mkCanvas();
+    g.fillStyle = PAL.jet; g.fillRect(0, 0, W, H);
+    stars(g, 220, .8);
+    g.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 22; i++) {
+      const col = i % 7 === 0 ? PAL.cyan : (i % 2 ? '#6a22b8' : PAL.amethyst);
+      const y0 = H * (.2 + i * .035), amp = 60 + i * 9, ph = i * .55;
+      const gr = g.createLinearGradient(0, y0 - amp, 0, y0 + amp * 3);
+      gr.addColorStop(0, rgba(col, 0)); gr.addColorStop(.3, rgba(col, .22)); gr.addColorStop(1, rgba(col, 0));
+      g.fillStyle = gr; g.beginPath(); g.moveTo(0, H);
+      for (let x = 0; x <= W; x += 16) g.lineTo(x, y0 + Math.sin(x * .0042 + ph) * amp + Math.sin(x * .011 + ph * 2) * amp * .3);
+      g.lineTo(W, H); g.closePath(); g.fill();
+      g.strokeStyle = rgba(col, .5); g.lineWidth = 1.5; g.beginPath();
+      for (let x = 0; x <= W; x += 16) { const y = y0 + Math.sin(x * .0042 + ph) * amp + Math.sin(x * .011 + ph * 2) * amp * .3; x ? g.lineTo(x, y) : g.moveTo(x, y); }
+      g.stroke();
+    }
+    g.globalCompositeOperation = 'source-over';
+    return c;
+  }
+
+  /* ---------- Morphing hero ---------- */
+  const heroCanvas = document.getElementById('morph');
+  const hgl = makeGL(heroCanvas);
+  let morphStart = () => {};
+  if (hgl) {
+    const hp = program(hgl, `
+      precision highp float;
+      uniform sampler2D A, B; uniform vec2 r; uniform vec2 tsA, tsB; uniform float m, t;
+      ${NOISE}
+      vec2 cover(vec2 uv, float z, vec2 ts){
+        float sa = r.x/r.y, ta = ts.x/ts.y;
+        vec2 s = sa > ta ? vec2(1., ta/sa) : vec2(sa/ta, 1.);
+        return (uv - .5) * s / z + .5;
+      }
+      // on a tall phone screen the photo is shown whole-ish: pulled back, with a dimmed, softened copy of itself filling above and below
+      vec3 softCopy(sampler2D tx, vec2 uv, vec2 ts){
+        vec3 acc = vec3(0.);
+        for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++)
+          acc += texture2D(tx, clamp(cover(uv + vec2(float(i), float(j))*.05, 1.25, ts), .002, .998)).rgb;
+        return acc / 9. * .38;
+      }
+      vec4 look(sampler2D tx, vec2 q, vec2 uv, vec2 ts){
+        float dEdge = max(abs(q.x - .5), abs(q.y - .5)) - .5;
+        float f = smoothstep(-.035, .02, dEdge);
+        vec3 fg = texture2D(tx, clamp(q, .002, .998)).rgb;
+        return vec4(f > .001 ? mix(fg, softCopy(tx, uv, ts), f) : fg, 1.);
+      }
+      void main(){
+        vec2 uv = gl_FragCoord.xy / r;
+        float tall = smoothstep(.9, .5, r.x / r.y);
+        float z = mix(1.06, .5, tall) + .03*sin(t*.15);
+        vec2 drift = vec2(sin(t*.12), cos(t*.1)) * .008;
+        float k = sin(m * 3.14159265);
+        vec2 w = (vec2(fbm(uv*3.5 + t*.2), fbm(uv*3.5 + 9. - t*.2)) - .5) * .35 * k;
+        vec4 ca = look(A, cover(uv + w*m + drift, z, tsA), uv, tsA);
+        vec4 cb = look(B, cover(uv - w*(1.-m) + drift, z, tsB), uv, tsB);
+        float nz = fbm(uv*2.6 + vec2(0., t*.1));
+        float e = clamp(m*1.7 - nz*.7, 0., 1.);
+        float mx = smoothstep(.0, 1., e);
+        vec3 col = mix(ca.rgb, cb.rgb, mx);
+        float edge = smoothstep(.02, .18, e) * (1. - smoothstep(.18, .38, e));
+        col += vec3(.38, .64, .68) * edge * .16 * k;          // a muted teal seam while photos blend
+        gl_FragColor = vec4(col, 1.);
+      }`);
+    const U = n => hgl.getUniformLocation(hp, n);
+    const uA = U('A'), uB = U('B'), ur = U('r'), utsA = U('tsA'), utsB = U('tsB'), um = U('m'), ut = U('t');
+    const makeTex = c => {
+      const tx = hgl.createTexture();
+      hgl.bindTexture(hgl.TEXTURE_2D, tx);
+      hgl.pixelStorei(hgl.UNPACK_FLIP_Y_WEBGL, true);
+      hgl.texImage2D(hgl.TEXTURE_2D, 0, hgl.RGBA, hgl.RGBA, hgl.UNSIGNED_BYTE, c);
+      hgl.texParameteri(hgl.TEXTURE_2D, hgl.TEXTURE_MIN_FILTER, hgl.LINEAR);
+      hgl.texParameteri(hgl.TEXTURE_2D, hgl.TEXTURE_MAG_FILTER, hgl.LINEAR);
+      hgl.texParameteri(hgl.TEXTURE_2D, hgl.TEXTURE_WRAP_S, hgl.CLAMP_TO_EDGE);
+      hgl.texParameteri(hgl.TEXTURE_2D, hgl.TEXTURE_WRAP_T, hgl.CLAMP_TO_EDGE);
+      return tx;
+    };
+    let tex = [], sizes = [];
+    hgl.uniform1i(uA, 0); hgl.uniform1i(uB, 1);
+
+    const HOLD = 300, MORPH = 2200;
+    let idx = 0, phaseStart = 0, running = false;
+    const ease = x => x < .5 ? 4*x*x*x : 1 - Math.pow(-2*x + 2, 3) / 2;
+    function frame(now) {
+      fit(heroCanvas, hgl);
+      if (!heroReady) phaseStart = now;
+      const el = now - phaseStart;
+      let m = 0;
+      if (el > HOLD) {
+        m = ease(Math.min(1, (el - HOLD) / MORPH));
+        if (el > HOLD + MORPH) { idx = (idx + 1) % tex.length; phaseStart = now; m = 0; }
+      }
+      hgl.activeTexture(hgl.TEXTURE0); hgl.bindTexture(hgl.TEXTURE_2D, tex[idx]);
+      hgl.activeTexture(hgl.TEXTURE1); hgl.bindTexture(hgl.TEXTURE_2D, tex[(idx + 1) % tex.length]);
+      hgl.uniform2f(utsA, sizes[idx][0], sizes[idx][1]);
+      hgl.uniform2f(utsB, sizes[(idx + 1) % tex.length][0], sizes[(idx + 1) % tex.length][1]);
+      hgl.uniform2f(ur, heroCanvas.width, heroCanvas.height);
+      hgl.uniform1f(um, m); hgl.uniform1f(ut, now / 1000);
+      hgl.drawArrays(hgl.TRIANGLE_STRIP, 0, 4);
+      requestAnimationFrame(frame);
+    }
+    // draw one frame immediately so the hero is ready beneath the loader
+    morphStart = () => { if (!running) { running = true; phaseStart = performance.now(); requestAnimationFrame(frame); } };
+    // product photography (set in the theme editor); procedural scenes only if the images fail to load
+    const PHOTOS = {{ photos | json }};
+    const sources = Promise.resolve(PHOTOS);
+    const loadImg = (src, tries) => new Promise((res, rej) => {             // a dropped connection gets two more tries before we give up
+      const im = new Image(); im.decoding = 'async'; im.crossOrigin = 'anonymous';   // WebGL needs CORS-clean images
+      im.onload = () => res(im);
+      im.onerror = () => tries > 0 ? setTimeout(() => loadImg(src, tries - 1).then(res, rej), 400) : rej();
+      im.src = src;
+    });
+    sources.then(srcs => Promise.all(srcs.map(src => loadImg(src, 2)))).then(imgs => {
+      if (!imgs.length) throw new Error('no images');
+      sizes = imgs.map(im => [im.naturalWidth, im.naturalHeight]);
+      tex = imgs.map(makeTex);
+    }).catch(() => {
+      sizes = [[W, H], [W, H], [W, H], [W, H]];
+      tex = [sceneSunset(), scenePlanet(), sceneCity(), sceneWaves()].map(makeTex);
+    }).then(morphStart);
+  } else {
+    heroCanvas.style.background = `linear-gradient(135deg, ${PAL.jet}, ${PAL.amethyst}, ${PAL.cyan})`;
+  }
+
+  /* ---------- Title: letter-by-letter bang ---------- */
+  const title = document.getElementById('title');
+  const letters = [...{{ section.settings.title | json }}].map((ch, i) => {
+    const s = document.createElement('span');
+    s.className = 'ch'; s.textContent = ch; s.style.setProperty('--i', i);
+    s.setAttribute('aria-hidden', 'true');
+    title.appendChild(s); return s;
+  });
+  function bang(i) { letters[i].classList.add('hit'); }
+  function playTitle() {
+    letters.forEach((_, i) => setTimeout(() => bang(i), i * 230));
+    setTimeout(() => title.classList.add('settled'), letters.length * 230 + 1000);
+    setTimeout(() => document.getElementById('nav').classList.add('show'), 200);
+    setTimeout(() => document.getElementById('shop').classList.add('show'), letters.length * 230 + 400);
+    setTimeout(() => document.getElementById('sub').classList.add('in'), letters.length * 230 + 250);
+  }
+
+  /* ---------- Loader sequence ---------- */
+  const loader = document.getElementById('loader');
+
+  const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+  Promise.all([Promise.race([fontsReady.catch(() => {}), new Promise(r => setTimeout(r, LOAD_MS))]), new Promise(r => setTimeout(r, LOAD_MS))]).then(() => {
+    openStart = performance.now();
+    setTimeout(() => { heroReady = true; }, OPEN_MS);
+    loader.classList.add('done');
+    setTimeout(playTitle, OPEN_MS * .6);
+    setTimeout(() => { vortexRunning = false; loader.style.display = 'none'; document.body.classList.remove('loading'); }, OPEN_MS + 100);
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Hero",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "title", "label": "Title", "default": "OFFGRID" },
+    { "type": "text", "id": "subtitle", "label": "Subtitle", "default": "Air Purifier Necklaces" },
+    { "type": "text", "id": "shop_label", "label": "Shop button", "default": "Shop Now" },
+    { "type": "header", "content": "Photos that morph into each other" },
+    { "type": "image_picker", "id": "photo_1", "label": "Photo 1", "info": "Leave empty to keep the built-in photo." },
+    { "type": "image_picker", "id": "photo_2", "label": "Photo 2" },
+    { "type": "image_picker", "id": "photo_3", "label": "Photo 3" }
+  ]
+}
+{% endschema %}

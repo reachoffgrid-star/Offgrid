@@ -1,0 +1,21 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "OFFGRID",
+    "theme_version": "1.0.0",
+    "theme_author": "OFFGRID",
+    "theme_documentation_url": "https://github.com/reachoffgrid-star/Offgrid",
+    "theme_support_email": "reach.offgrid@gmail.com"
+  },
+  {
+    "name": "Shop link",
+    "settings": [
+      {
+        "type": "url",
+        "id": "shop_link",
+        "label": "Where Air Purifiers and Shop buttons go",
+        "info": "Leave empty to show every product, in the order they were added."
+      }
+    ]
+  }
+]

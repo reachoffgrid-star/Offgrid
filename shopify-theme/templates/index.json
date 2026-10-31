@@ -1,0 +1,28 @@
+{
+  "sections": {
+    "hero": { "type": "home-hero", "settings": {} },
+    "story": {
+      "type": "home-story",
+      "blocks": {
+        "f1": { "type": "feature", "settings": { "title": "Worn close", "text": "Sits near your breathing zone, so fresher air is right where you need it." } },
+        "f2": { "type": "feature", "settings": { "title": "Made to go", "text": "Slim, light and cord-worn. Take it from your desk to the street to the airport." } },
+        "f3": { "type": "feature", "settings": { "title": "Yours to own", "text": "Simple to use and made to look like jewellery, not equipment." } }
+      },
+      "block_order": ["f1", "f2", "f3"],
+      "settings": {}
+    },
+    "founders": {
+      "type": "home-founders",
+      "blocks": {
+        "p1": { "type": "founder", "settings": { "theme_image": "founder-1.webp", "focus": "object-position: 50% 22%" } },
+        "p2": { "type": "founder", "settings": { "theme_image": "founder-2.jpg", "focus": "object-position: 50% 0" } },
+        "p3": { "type": "founder", "settings": {} },
+        "p4": { "type": "founder", "settings": {} }
+      },
+      "block_order": ["p1", "p2", "p3", "p4"],
+      "settings": {}
+    },
+    "footer": { "type": "contact-footer", "settings": {} }
+  },
+  "order": ["hero", "story", "founders", "footer"]
+}

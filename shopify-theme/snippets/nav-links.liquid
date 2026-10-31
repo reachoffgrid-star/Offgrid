@@ -1,0 +1,4 @@
+{%- comment -%} The three links in every page's navbar. {%- endcomment -%}
+<a href="{{ routes.root_url }}"{% if template.name == 'index' %} class="active" aria-current="page"{% endif %}>Home</a>
+<a href="{% render 'shop-url' %}"{% if template.name == 'collection' or template.name == 'product' %} class="active"{% if template.name == 'collection' %} aria-current="page"{% endif %}{% endif %}>Air Purifiers</a>
+<a href="{{ routes.cart_url }}"{% if template.name == 'cart' %} class="active" aria-current="page"{% endif %}>Cart<span class="cart-count{% if cart.item_count > 0 %} has{% endif %}" aria-label="items in cart">{{ cart.item_count }}</span></a>

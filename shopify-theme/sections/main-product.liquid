@@ -1,0 +1,72 @@
+{%- assign variant = product.selected_or_first_available_variant -%}
+<section class="pdp" aria-label="{{ product.title | escape }}">
+  <div>
+    <div class="pdp-media">
+      {%- if product.featured_media -%}
+        {{ product.featured_media | image_url: width: 1400 | image_tag: id: 'pdp-main', alt: product.featured_media.alt, sizes: '(max-width: 760px) 100vw, 540px' }}
+      {%- endif -%}
+    </div>
+    {%- if product.media.size > 1 -%}
+      <div class="pdp-thumbs">
+        {%- for m in product.media -%}
+          <button type="button" data-src="{{ m | image_url: width: 1400 }}" aria-label="Show photo {{ forloop.index }}"{% if forloop.first %} aria-current="true"{% endif %}>
+            {{- m | image_url: width: 160 | image_tag: alt: '' -}}
+          </button>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  </div>
+
+  <div class="pdp-info">
+    <p class="eyebrow">{{ shop.name | escape }}</p>
+    <h1>{{ product.title | escape }}</h1>
+    <span class="price" id="pdp-price">
+      {{- variant.price | money_without_trailing_zeros -}}
+      {%- if variant.compare_at_price > variant.price %} <s class="was">{{ variant.compare_at_price | money_without_trailing_zeros }}</s> <span class="save">Save {{ variant.compare_at_price | minus: variant.price | money_without_trailing_zeros }}</span>{% endif -%}
+    </span>
+
+    {%- unless product.has_only_default_variant -%}
+      <select id="pdp-variant" aria-label="Choose an option">
+        {%- for v in product.variants -%}
+          <option value="{{ v.id }}" data-price="{{ v.price | money_without_trailing_zeros | escape }}"{% if v.id == variant.id %} selected{% endif %}{% unless v.available %} disabled{% endunless %}>{{ v.title | escape }}{% unless v.available %} (sold out){% endunless %}</option>
+        {%- endfor -%}
+      </select>
+    {%- endunless -%}
+
+    <div class="row">
+      {%- if variant.available -%}
+        <button type="button" data-add-to-cart data-variant-id="{{ variant.id }}" data-name="{{ product.title | escape }}">Add to cart</button>
+      {%- else -%}
+        <button type="button" disabled>Sold out</button>
+      {%- endif -%}
+    </div>
+
+    <div class="rte">{{ product.description }}</div>
+    <a class="back" href="{% render 'shop-url' %}">&larr; All air purifiers</a>
+  </div>
+</section>
+
+<script>
+(() => {
+  const main = document.getElementById('pdp-main');
+  document.querySelectorAll('.pdp-thumbs button').forEach(b => b.addEventListener('click', () => {
+    if (main) { main.removeAttribute('srcset'); main.src = b.dataset.src; }
+    document.querySelectorAll('.pdp-thumbs button').forEach(o => o.removeAttribute('aria-current'));
+    b.setAttribute('aria-current', 'true');
+  }));
+  const sel = document.getElementById('pdp-variant');
+  if (sel) sel.addEventListener('change', () => {
+    const opt = sel.selectedOptions[0], btn = document.querySelector('.pdp [data-add-to-cart]');
+    document.getElementById('pdp-price').textContent = opt.dataset.price;
+    if (btn) { btn.dataset.variantId = sel.value; if (window.OffgridCart) OffgridCart.sync(); }
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Product",
+  "tag": "div",
+  "settings": []
+}
+{% endschema %}

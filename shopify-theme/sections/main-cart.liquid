@@ -1,0 +1,84 @@
+<main class="cart-page">
+  <header class="head"><h1>{{ section.settings.heading | escape }}</h1><div class="rule"></div></header>
+  <div id="view"></div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const Cart = window.OffgridCart, view = document.getElementById('view');
+  const shopUrl = {% capture u %}{% render 'shop-url' %}{% endcapture %}{{ u | json }};
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const thumb = src => { try { const u = new URL(src, location.href); u.searchParams.set('width', '240'); return u.href; } catch (e) { return src; } };
+  let note = '';
+
+  function render() {
+    const items = Cart.items();
+    if (!items.length) {
+      view.innerHTML = `<div class="empty"><p>Your cart is empty.</p><a class="btn" href="${esc(shopUrl)}" style="margin-top:22px">Shop Air Purifiers</a></div>`;
+      return;
+    }
+    const sub = Cart.subtotal();
+    view.innerHTML = `
+      <div class="layout">
+        <ul class="lines">
+          ${items.map(i => `
+            <li class="cline" data-id="${esc(i.id)}">
+              ${i.img ? `<img class="thumb" src="${esc(thumb(i.img))}" alt="">` : `<div class="thumb" role="img" aria-label="No product photo"><span>Image</span></div>`}
+              <div>
+                <div class="name"><a href="${esc(i.url)}" style="color:inherit;text-decoration:none">${esc(i.name)}</a></div>
+                ${i.variant ? `<div class="unit">${esc(i.variant)}</div>` : ''}
+                <div class="unit">${Cart.money(i.price)} each</div>
+                <div class="qty" role="group" aria-label="Quantity">
+                  <button type="button" data-step="-1" aria-label="One fewer">&minus;</button>
+                  <output aria-live="polite">${i.qty}</output>
+                  <button type="button" data-step="1" aria-label="One more">+</button>
+                </div>
+              </div>
+              <div class="side">
+                <div class="total">${Cart.money(i.price * i.qty)}</div>
+                <button type="button" class="remove">Remove</button>
+              </div>
+            </li>`).join('')}
+        </ul>
+        <aside class="summary" aria-label="Order summary">
+          <h2>Order Summary</h2>
+          <dl>
+            <dt>Items</dt><dd>${Cart.count()}</dd>
+            <dt>Subtotal</dt><dd>${Cart.money(sub)}</dd>
+            <dt>Shipping</dt><dd>At checkout</dd>
+            <dt class="grand">Total</dt><dd class="grand">${Cart.money(sub)}</dd>
+          </dl>
+          <a class="btn" href="${esc(Cart.checkoutUrl)}">Checkout</a>
+          <a class="btn ghost" href="${esc(shopUrl)}">Continue Shopping</a>
+          <p class="note" id="note" aria-live="polite">${esc(note)}</p>
+        </aside>
+      </div>`;
+  }
+
+  view.addEventListener('click', e => {
+    const line = e.target.closest('.cline');
+    if (!line) return;
+    const id = line.dataset.id;
+    const step = e.target.closest('[data-step]');
+    if (step) {
+      const out = line.querySelector('output'), next = Number(out.textContent) + Number(step.dataset.step);
+      out.textContent = Math.max(0, next);
+      Cart.setQty(id, next);
+    }
+    if (e.target.closest('.remove')) Cart.remove(id);
+  });
+  document.addEventListener('cart:change', () => { note = ''; render(); });
+  document.addEventListener('cart:error', e => { note = e.detail.message; render(); });
+  render();
+});
+</script>
+
+{% schema %}
+{
+  "name": "Cart",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Your Cart" }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,63 @@
+{%- comment -%} Plain pages in the sage style: about/policy pages, 404, search, blog, collections list and the store password page. {%- endcomment -%}
+<main class="plain">
+  {%- case template.name -%}
+    {%- when 'page' -%}
+      <header class="head"><h1>{{ page.title | escape }}</h1><div class="rule"></div></header>
+      <div class="card-plain rte">{{ page.content }}</div>
+
+    {%- when '404' -%}
+      <header class="head"><h1>Not found</h1><div class="rule"></div></header>
+      <div class="empty"><p>This page does not exist.</p><a class="btn" href="{% render 'shop-url' %}" style="margin-top:22px">Shop Air Purifiers</a></div>
+
+    {%- when 'search' -%}
+      <header class="head"><h1>Search</h1><div class="rule"></div></header>
+      <form action="{{ routes.search_url }}" method="get" role="search">
+        <input type="search" name="q" value="{{ search.terms | escape }}" placeholder="Search the store" aria-label="Search the store">
+        <button class="btn inline" type="submit">Search</button>
+      </form>
+      {%- if search.performed -%}
+        {%- if search.results_count == 0 -%}
+          <p class="muted">Nothing matched “{{ search.terms | escape }}”.</p>
+        {%- else -%}
+          <ul class="results">
+            {%- for item in search.results -%}<li><a href="{{ item.url }}">{{ item.title | escape }}</a></li>{%- endfor -%}
+          </ul>
+        {%- endif -%}
+      {%- endif -%}
+
+    {%- when 'list-collections' -%}
+      <header class="head"><h1>Collections</h1><div class="rule"></div></header>
+      <ul class="results">
+        {%- for c in collections -%}<li><a href="{{ c.url }}">{{ c.title | escape }}</a></li>{%- endfor -%}
+      </ul>
+
+    {%- when 'blog' -%}
+      <header class="head"><h1>{{ blog.title | escape }}</h1><div class="rule"></div></header>
+      <ul class="results">
+        {%- for a in blog.articles -%}<li><a href="{{ a.url }}">{{ a.title | escape }}</a></li>{%- else -%}<li class="muted">No posts yet.</li>{%- endfor -%}
+      </ul>
+
+    {%- when 'article' -%}
+      <header class="head"><h1>{{ article.title | escape }}</h1><div class="rule"></div></header>
+      <div class="card-plain rte">{{ article.content }}</div>
+
+    {%- when 'password' -%}
+      <header class="head"><h1>{{ shop.name | escape }}</h1><div class="rule"></div></header>
+      <div class="card-plain">
+        {%- if shop.password_message != blank -%}<div class="rte" style="text-align:center;margin-bottom:22px">{{ shop.password_message }}</div>{%- endif -%}
+        {%- form 'storefront_password' -%}
+          <input type="password" name="password" placeholder="Store password" aria-label="Store password" autocomplete="current-password">
+          <button class="btn inline" type="submit">Enter</button>
+          {%- if form.errors -%}<p class="errors" style="flex-basis:100%">That password is not right.</p>{%- endif -%}
+        {%- endform -%}
+      </div>
+  {%- endcase -%}
+</main>
+
+{% schema %}
+{
+  "name": "Page content",
+  "tag": "div",
+  "settings": []
+}
+{% endschema %}

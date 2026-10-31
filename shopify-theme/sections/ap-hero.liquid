@@ -1,0 +1,194 @@
+<main id="hero">
+  <div id="fog"></div>
+  <canvas id="vapour"></canvas>
+  <canvas id="drops"></canvas>
+  <div id="stage"><div id="title"><h1 aria-label="{{ section.settings.title | escape }}"></h1><p id="sub">{{ section.settings.subtitle | escape }}</p></div></div>
+</main>
+
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const heroEl = document.getElementById('hero');
+  const VW = () => heroEl.clientWidth, VH = () => heroEl.clientHeight;      // everything is sized to the hero, not the window
+
+  /* ---------- title ---------- */
+  const h1 = document.querySelector('#hero h1');
+  const letters = [...{{ section.settings.title | json }}].map(ch => { const s = document.createElement('span'); s.className = 'ch'; s.textContent = ch; s.setAttribute('aria-hidden', 'true'); h1.appendChild(s); return s; });
+  let titleShown = false;
+  function showTitle() {
+    if (titleShown) return; titleShown = true;
+    letters.forEach((l, i) => setTimeout(() => l.classList.add('in'), reduce ? 0 : i * 140));
+    setTimeout(() => document.getElementById('sub').classList.add('in'), reduce ? 0 : letters.length * 140 + 300);
+  }
+
+  const NOISE = `
+    float h(vec2 p){ return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
+    float n(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f);
+      return mix(mix(h(i), h(i+vec2(1.,0.)), f.x), mix(h(i+vec2(0.,1.)), h(i+vec2(1.,1.)), f.x), f.y); }
+    float fbm(vec2 p){ float v = 0., a = .5; for (int i = 0; i < 5; i++){ v += a*n(p); p = p*2.03 + vec2(1.7, 9.2); a *= .5; } return v; }`;
+
+  /* ---------- smoke wisps + vapour (the clean-air backdrop) ---------- */
+  const vap = document.getElementById('vapour');
+  const vgl = vap.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true });
+  let vU = null;
+  if (vgl) {
+    const mk = (type, src) => { const s = vgl.createShader(type); vgl.shaderSource(s, src); vgl.compileShader(s); if (!vgl.getShaderParameter(s, vgl.COMPILE_STATUS)) console.error(vgl.getShaderInfoLog(s)); return s; };
+    const pr = vgl.createProgram();
+    vgl.attachShader(pr, mk(vgl.VERTEX_SHADER, 'attribute vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }'));
+    vgl.attachShader(pr, mk(vgl.FRAGMENT_SHADER, `
+      precision highp float;
+      uniform vec2 r; uniform float t, src;
+      ${NOISE}
+      // one thread of snuffed-candle smoke: a fine, bright line that climbs straight and steady,
+      // starts to sway into an S, then breaks into curling, spiralling loops as it rises and thins out
+      // one folded sheet of smoke across a ribbon: a clear silhouette, a bright rim, and light falling off across it like a rolled cylinder
+      float sheet(float lat, float w, vec2 np, float seed, out float sh){
+        float n = lat / w, an = abs(n);
+        float body = 1. - smoothstep(.76, 1., an);
+        float fold = fbm(np*1.5 + vec2(n*1.2, 0.) + seed);
+        float lightSide = smoothstep(1., -.8, n);
+        float rim = smoothstep(.6, .86, an) * (1. - smoothstep(.86, 1., an));
+        sh = clamp(.28 + .5*lightSide + (fold - .5)*.38 + rim*.4, 0., 1.);
+        return body * (.6 + .4*fold);
+      }
+      float strand(vec2 p, float aspect, float frac, float seed, float t, out float sh){
+        float y = p.y - src;
+        float x0 = (frac - .5) * aspect;
+        float narrow = min(1., aspect * 1.15);                            // portrait screens: scale the plumes to the width
+        float tr = .55 + .45*smoothstep(.05, .62, y);                    // rippling from the border, wilder as it climbs
+        float amp = .07 + .09*tr*tr + .03*tr;                            // a big swing right from the border
+        amp *= narrow;
+        float cx = x0 + sin(y*9. - t*.95 + seed)*amp + sin(y*15. - t*1.4 + seed*2.3)*amp*.4 + sin(t*.3 + seed)*.03*tr;
+        float w0 = .0075 + .03*tr*tr + .012*y;
+        float w = w0 * 10. * narrow;                                             // ten times the original ribbon width
+        vec2 np = vec2(p.x*3., y*2.3 - t*.28) + seed;
+        float turb = (fbm(np) - .5) + (fbm(np*2.1 + 7.) - .5)*.55;
+        float lateral = (p.x - cx) + turb * w0 * 15. * tr * narrow;              // the curls and loops of the upper smoke
+        float sh1, sh2;
+        float d1 = sheet(lateral, w, np, seed, sh1);
+        float off = w * (.42 + .3*sin(y*6. + seed + t*.5));              // a second sheet folded over the first
+        float d2 = sheet(lateral + off, w*.7, np + 5.3, seed + 3., sh2);
+        float life = smoothstep(-.015, .025, y) * smoothstep(1., .3, y);
+        sh = mix(sh1, sh2, d2);
+        return (1. - (1. - d1)*(1. - d2)) * life;
+      }
+      float smokeAt(vec2 p, float aspect, float t, out float shade){
+        float d = 0.; shade = .6;
+        // three sources along the bottom border, each a single ribbon of smoke
+        float f[3]; f[0] = .14; f[1] = .66; f[2] = .9;
+        for (int i = 0; i < 3; i++){
+          float sh;
+          float s1 = strand(p, aspect, f[i], 1.3 + float(i)*6.4, t*(.9 + float(i)*.1), sh);
+          shade = mix(shade, sh, s1);
+          d = 1. - (1. - d) * (1. - s1);
+        }
+        return d;
+      }
+      void main(){
+        vec2 uv = gl_FragCoord.xy / r;
+        float aspect = r.x / r.y;
+        vec2 p = vec2((uv.x - .5) * aspect, uv.y);
+
+        float sm;
+        float d = smokeAt(p, aspect, t, sm);
+
+        // keep the title area clearer
+        float tm = .22 + .78*smoothstep(.0, .24, length(vec2(p.x / aspect * 1.6, uv.y - .5)));
+
+        // soft vapour haze hugging the bottom
+        float haze = smoothstep(.45, .85, fbm(vec2(p.x*.9, p.y*1.1 - t*.05) + fbm(p*1.3 + t*.03))) * smoothstep(.45, .0, uv.y) * .22;
+
+        vec3 shade = mix(vec3(.66,.67,.68), vec3(1.), sm);     // neutral grey in the shadowed folds, pure white on the lit side and rim
+        float a = clamp(d, 0., .93) * .6 * tm;
+        vec3 col = shade * a + vec3(1.) * haze * (1. - a);
+        gl_FragColor = vec4(col, a + haze * (1. - a));
+      }`));
+    vgl.linkProgram(pr); vgl.useProgram(pr);
+    const buf = vgl.createBuffer(); vgl.bindBuffer(vgl.ARRAY_BUFFER, buf);
+    vgl.bufferData(vgl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), vgl.STATIC_DRAW);
+    const loc = vgl.getAttribLocation(pr, 'p'); vgl.enableVertexAttribArray(loc); vgl.vertexAttribPointer(loc, 2, vgl.FLOAT, false, 0, 0);
+    vU = { r: vgl.getUniformLocation(pr, 'r'), t: vgl.getUniformLocation(pr, 't'), src: vgl.getUniformLocation(pr, 'src') };
+  }
+  let vapourOn = false;
+  function showVapour() { if (!vapourOn) { vapourOn = true; vap.classList.add('on'); dropC.classList.add('on'); dropStart = performance.now(); document.getElementById('hero').classList.add('clear'); } }
+  function vapourFrame(now) {
+    if (vgl && vU && vapourOn) {                                              // nothing to draw until the air has cleared
+      const sc = Math.min(devicePixelRatio || 1, 2) * .6;                      // soft by nature, so render at reduced resolution
+      const w = Math.max(2, Math.floor(VW() * sc)), h = Math.max(2, Math.floor(VH() * sc));
+      if (vap.width !== w || vap.height !== h) { vap.width = w; vap.height = h; vgl.viewport(0, 0, w, h); }
+      vgl.clearColor(0, 0, 0, 0); vgl.clear(vgl.COLOR_BUFFER_BIT);
+      vgl.uniform2f(vU.r, w, h); vgl.uniform1f(vU.t, now / 1000 + 20);
+      vgl.uniform1f(vU.src, Math.min(30, Math.max(14, VW() * .026)) / Math.max(1, VH()));   // the glass's bottom border
+      vgl.drawArrays(vgl.TRIANGLE_STRIP, 0, 4);
+    }
+    requestAnimationFrame(vapourFrame);
+  }
+  requestAnimationFrame(vapourFrame);
+
+  /* ---------- moisture: dew drops condensing on the glass, a few sliding down ---------- */
+  const dropC = document.getElementById('drops'), dg = dropC.getContext('2d');
+  let drops = [], DRW = 0, DRH = 0, dropStart = 0;
+  function buildDrops() {
+    const sc = Math.min(devicePixelRatio || 1, 2);
+    DRW = dropC.width = Math.floor(VW() * sc); DRH = dropC.height = Math.floor(VH() * sc);
+    const n = Math.round(VW() * VH() / 3600);
+    drops = Array.from({ length: n }, () => {
+      const big = Math.random() < .07, r = (big ? 6 + Math.random() * 6 : 1.6 + Math.pow(Math.random(), 1.8) * 5.5) * sc;
+      return { x: Math.random() * DRW, y: DRH * (1 - Math.pow(Math.random(), 1.9)), r, born: Math.random() * 7000, run: big && Math.random() < .55, vy: 0, trail: [] };
+    });
+  }
+  function drawDrop(g, d, a, sc) {
+    const rx = d.r, ry = d.r * 1.18;
+    g.globalAlpha = a;
+    const body = g.createRadialGradient(d.x - rx * .25, d.y - ry * .3, rx * .1, d.x, d.y, ry);
+    body.addColorStop(0, 'rgba(247,243,233,.05)'); body.addColorStop(.7, 'rgba(247,243,233,.1)'); body.addColorStop(1, 'rgba(247,243,233,.34)');
+    g.fillStyle = body; g.beginPath(); g.ellipse(d.x, d.y, rx, ry, 0, 0, 6.283); g.fill();
+    g.strokeStyle = 'rgba(247,243,233,.5)'; g.lineWidth = Math.max(.6, .7 * sc); g.stroke();
+    g.fillStyle = 'rgba(255,255,255,.95)';                                   // specular
+    g.beginPath(); g.ellipse(d.x - rx * .38, d.y - ry * .42, rx * .24, ry * .16, -.6, 0, 6.283); g.fill();
+    g.fillStyle = 'rgba(255,255,255,.4)';                                    // light refracted through the lower edge
+    g.beginPath(); g.ellipse(d.x + rx * .1, d.y + ry * .55, rx * .5, ry * .16, 0, 0, 6.283); g.fill();
+    g.globalAlpha = 1;
+  }
+  function dropsFrame(now) {
+    if (dropStart && dg) {
+      const sc = DRW / VW(), el = now - dropStart;
+      dg.clearRect(0, 0, DRW, DRH);
+      for (const d of drops) {
+        const a = Math.min(1, Math.max(0, (el - d.born) / 2500));
+        if (a <= 0) continue;
+        if (d.run && el > d.born + 4000) {
+          d.vy = Math.min(.5 * sc, d.vy + .004 * sc);
+          d.y += d.vy;
+          d.trail.push(d.y); if (d.trail.length > 160) d.trail.shift();
+          if (d.y > DRH + 20) { d.run = false; d.trail.length = 0; d.y = -50; d.r = 0; }
+        }
+        if (d.trail.length > 1) {                                            // the wet streak left behind
+          dg.strokeStyle = 'rgba(255,255,255,.12)'; dg.lineWidth = Math.max(1, d.r * .45);
+          dg.beginPath(); dg.moveTo(d.x, d.trail[0]); dg.lineTo(d.x, d.trail[d.trail.length - 1]); dg.stroke();
+        }
+        if (d.r > 0) drawDrop(dg, d, a, sc);
+      }
+    }
+    requestAnimationFrame(dropsFrame);
+  }
+  buildDrops(); addEventListener('resize', buildDrops);
+  requestAnimationFrame(dropsFrame);
+
+  /* ---------- start: the clean-air hero fades in, then the title ---------- */
+  showVapour();
+  const fontsReady = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+  Promise.race([fontsReady, new Promise(r => setTimeout(r, 800))]).then(() => setTimeout(showTitle, reduce ? 0 : 400));
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Clean-air hero",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "title", "label": "Title", "default": "OFFGRID" },
+    { "type": "text", "id": "subtitle", "label": "Subtitle", "default": "Air Purifiers" }
+  ]
+}
+{% endschema %}

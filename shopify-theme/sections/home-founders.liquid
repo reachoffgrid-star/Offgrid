@@ -1,0 +1,55 @@
+<section id="founders" aria-label="The founders">
+  <div class="head">
+    <p class="eyebrow reveal">{{ section.settings.eyebrow | escape }}</p>
+    <h2 class="reveal">{{ section.settings.heading | escape }}</h2>
+    <div class="rule2 reveal"></div>
+  </div>
+  <div class="founders-grid">
+    {%- for block in section.blocks -%}
+      <article class="founder reveal" {{ block.shopify_attributes }}>
+        {%- if block.settings.image != blank -%}
+          {{ block.settings.image | image_url: width: 900 | image_tag: class: 'ph photo', alt: block.settings.name, loading: 'lazy', sizes: '(max-width: 420px) 100vw, (max-width: 960px) 50vw, 300px', style: block.settings.focus }}
+        {%- elsif block.settings.theme_image != blank -%}
+          <img class="ph photo" src="{{ block.settings.theme_image | asset_url }}" style="{{ block.settings.focus }}" alt="{{ block.settings.name | escape }}" width="1200" height="1200" loading="lazy" decoding="async">
+        {%- else -%}
+          <div class="ph" role="img" aria-label="Founder photo placeholder"><span>Photo</span></div>
+        {%- endif -%}
+        <div class="meta">
+          <h3>{{ block.settings.name | escape }}</h3>
+          <p class="role">{{ block.settings.role | escape }}</p>
+          <p class="bio">{{ block.settings.bio | escape }}</p>
+        </div>
+      </article>
+    {%- endfor -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Founders",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Small heading", "default": "The People Behind It" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "The Founders" }
+  ],
+  "blocks": [
+    {
+      "type": "founder",
+      "name": "Founder",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Photo" },
+        { "type": "select", "id": "focus", "label": "Keep in view", "default": "object-position: 50% 22%", "options": [
+          { "value": "object-position: 50% 0", "label": "Top of the photo" },
+          { "value": "object-position: 50% 22%", "label": "Upper part (faces)" },
+          { "value": "object-position: 50% 50%", "label": "Middle" }
+        ] },
+        { "type": "text", "id": "name", "label": "Name", "default": "Founder name" },
+        { "type": "text", "id": "role", "label": "Role", "default": "Role" },
+        { "type": "textarea", "id": "bio", "label": "Short bio", "default": "A short line about this founder goes here." },
+        { "type": "text", "id": "theme_image", "label": "Built-in photo file", "info": "Used only when no photo is picked above." }
+      ]
+    }
+  ],
+  "max_blocks": 8
+}
+{% endschema %}

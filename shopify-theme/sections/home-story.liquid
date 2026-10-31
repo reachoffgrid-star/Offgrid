@@ -1,0 +1,99 @@
+{%- assign lines = section.settings.lines | newline_to_br | split: '<br />' -%}
+{%- capture first_line -%}{{ lines | first | strip }}{%- endcapture -%}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+  <filter id="threshold"><feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 255 -140"/></filter>
+</defs></svg>
+
+<section id="story" aria-label="About {{ shop.name | escape }}">
+  <div class="inner">
+    <p class="eyebrow reveal">{{ section.settings.eyebrow | escape }}</p>
+    <div class="reveal"><h2 class="morph" id="tagline" aria-label="{{ lines | join: ' ' | strip_newlines | escape }}"><span id="m1" aria-hidden="true">{{ first_line | escape }}</span><span id="m2" aria-hidden="true"></span></h2></div>
+    <div class="rule2 reveal"></div>
+    <p class="copy reveal">{{ section.settings.copy | escape }}</p>
+    {%- if section.blocks.size > 0 -%}
+    <div class="trio">
+      {%- for block in section.blocks -%}
+      <article class="reveal" {{ block.shopify_attributes }}><h3>{{ block.settings.title | escape }}</h3><p>{{ block.settings.text | escape }}</p></article>
+      {%- endfor -%}
+    </div>
+    {%- endif -%}
+    <a class="cta reveal" href="{% render 'shop-url' %}">{{ section.settings.cta_label | escape }}</a>
+  </div>
+</section>
+
+{%- liquid
+  assign clean = ''
+  for l in lines
+    assign t = l | strip
+    if t != blank
+      assign clean = clean | append: t | append: '\n'
+    endif
+  endfor
+  assign lines = clean | strip | split: '\n'
+-%}
+<script>
+(() => {
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  /* ---------- Tagline morph: one line melts into the next ---------- */
+  const m1 = document.getElementById('m1'), m2 = document.getElementById('m2'), mh = document.getElementById('tagline');
+  if (m1 && m2) {
+    const LINES = {{ lines | json }};
+    const HOLD_T = 2600, MORPH_T = 1400;
+    let cur = 0, phaseStart = 0, morphing = false;
+    function paint(f) {                                      // f: 0 = still the old line, 1 = fully the new one
+      f = Math.min(Math.max(f, 0), 1);
+      const g = 1 - f;
+      m2.style.filter = 'blur(' + Math.min(8 / f - 8, 100) + 'px)'; m2.style.opacity = Math.pow(f, .4);
+      m1.style.filter = 'blur(' + Math.min(8 / g - 8, 100) + 'px)'; m1.style.opacity = Math.pow(g, .4);
+    }
+    function settle(i) {
+      m1.textContent = LINES[i]; m1.style.filter = 'none'; m1.style.opacity = 1;
+      m2.textContent = ''; m2.style.filter = 'none'; m2.style.opacity = 0;
+    }
+    function fitTagline() {                                  // reserve the height of the tallest line so nothing below jumps
+      const probe = mh.cloneNode(false); probe.removeAttribute('id'); probe.removeAttribute('aria-label');
+      probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;filter:none;width:' + mh.clientWidth + 'px';
+      const sp = document.createElement('span'); probe.appendChild(sp); mh.parentNode.appendChild(probe);
+      let h = 0; LINES.forEach(t => { sp.textContent = t; h = Math.max(h, probe.offsetHeight); });
+      probe.remove(); mh.style.minHeight = h + 'px';
+    }
+    function tick(now) {
+      if (!phaseStart) phaseStart = now;
+      const el = now - phaseStart;
+      if (!morphing && el > HOLD_T) { morphing = true; phaseStart = now; m2.textContent = LINES[(cur + 1) % LINES.length]; }
+      else if (morphing) {
+        const f = el / MORPH_T;
+        if (f >= 1) { cur = (cur + 1) % LINES.length; settle(cur); morphing = false; phaseStart = now; } else paint(f);
+      }
+      requestAnimationFrame(tick);
+    }
+    fitTagline(); addEventListener('resize', fitTagline);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTagline);
+    if (!reduceMotion) requestAnimationFrame(tick);
+  }
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Story",
+  "tag": "div",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Small heading", "default": "Air Purifier Necklaces" },
+    { "type": "textarea", "id": "lines", "label": "Taglines", "info": "One per line; each melts into the next.", "default": "Own every breath.\nThe air you deserve.\nBreathe freely, anywhere.\nClean air, worn close." },
+    { "type": "textarea", "id": "copy", "label": "Text", "default": "OFFGRID air purifier necklaces are made to sit close to where you breathe. Light on the chest, easy to forget you are wearing, and ready to go wherever you go: the commute, the office, the long trip home. Clean air, on your own terms." },
+    { "type": "text", "id": "cta_label", "label": "Button", "default": "Shop Air Purifiers" }
+  ],
+  "blocks": [
+    {
+      "type": "feature",
+      "name": "Feature",
+      "settings": [
+        { "type": "text", "id": "title", "label": "Heading", "default": "Worn close" },
+        { "type": "textarea", "id": "text", "label": "Text", "default": "Sits near your breathing zone, so fresher air is right where you need it." }
+      ]
+    }
+  ],
+  "max_blocks": 3
+}
+{% endschema %}
