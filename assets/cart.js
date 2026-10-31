@@ -28,7 +28,7 @@
     add(item, qty = 1) {
       const found = items.find(i => i.id === item.id);
       if (found) found.qty = Math.min(99, found.qty + qty);
-      else items.push({ id: item.id, name: item.name, price: Number(item.price) || 0, qty: Math.min(99, qty) });
+      else items.push({ id: item.id, name: item.name, price: Number(item.price) || 0, img: item.img || '', qty: Math.min(99, qty) });
       save();
     },
     setQty(id, qty) {
@@ -39,7 +39,7 @@
     },
     remove(id) { items = items.filter(i => i.id !== id); save(); },
     clear() { items = []; save(); },
-    money: n => '$' + n.toFixed(2)
+    money: n => '\u20B9' + Math.round(n).toLocaleString('en-IN')
   };
   window.OffgridCart = Cart;
 
@@ -73,7 +73,7 @@
   document.addEventListener('click', e => {
     const add = e.target.closest('[data-add-to-cart]');
     if (add) {
-      Cart.add({ id: add.dataset.id, name: add.dataset.name, price: add.dataset.price });
+      Cart.add({ id: add.dataset.id, name: add.dataset.name, price: add.dataset.price, img: add.dataset.img });
       const inc = add.nextElementSibling && add.nextElementSibling.querySelector('[data-inc]');
       if (inc) inc.focus();                                   // keep keyboard focus on the control that replaced the button
       return;
@@ -81,7 +81,7 @@
     const step = e.target.closest('.qty-step [data-inc], .qty-step [data-dec]');
     if (step) {
       const b = step.closest('.qty-step').previousElementSibling, id = b.dataset.id;
-      if (step.hasAttribute('data-inc')) Cart.add({ id, name: b.dataset.name, price: b.dataset.price });
+      if (step.hasAttribute('data-inc')) Cart.add({ id, name: b.dataset.name, price: b.dataset.price, img: b.dataset.img });
       else { Cart.setQty(id, Cart.qty(id) - 1); if (!Cart.qty(id)) b.focus(); }
     }
   });

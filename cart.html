@@ -55,6 +55,7 @@
   .thumb { aspect-ratio: 1; border-radius: 12px; display: grid; place-items: center;
     background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.45) 42%, transparent 54%),
                 radial-gradient(ellipse 70% 60% at 50% 45%, rgba(169,188,165,.45), transparent 70%), linear-gradient(160deg, #e9e5db, var(--stone)); }
+  img.thumb { width: 100%; object-fit: cover; display: block; }
   .thumb span { font-size: .5rem; letter-spacing: .2em; text-transform: uppercase; color: rgba(52,58,54,.45); }
   .name { font-weight: 500; font-size: .92rem; letter-spacing: .14em; text-transform: uppercase; }
   .unit { margin-top: .35rem; font-family: Georgia, "Times New Roman", serif; font-size: .9rem; color: rgba(52,58,54,.6); }
@@ -128,7 +129,7 @@
         <ul class="lines">
           ${items.map(i => `
             <li class="line" data-id="${esc(i.id)}">
-              <div class="thumb" role="img" aria-label="Product image placeholder"><span>Image</span></div>
+              ${i.img ? `<img class="thumb" src="${esc(i.img)}" alt="">` : `<div class="thumb" role="img" aria-label="Product image placeholder"><span>Image</span></div>`}
               <div>
                 <div class="name">${esc(i.name)}</div>
                 <div class="unit">${Cart.money(i.price)} each</div>

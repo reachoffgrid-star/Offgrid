@@ -119,10 +119,13 @@
       linear-gradient(115deg, transparent 30%, rgba(255,255,255,.45) 42%, transparent 54%),
       radial-gradient(ellipse 70% 60% at 50% 45%, rgba(169,188,165,.45), transparent 70%),
       linear-gradient(160deg, #e9e5db, var(--stone)); }
+  .ph.photo { background: #e9e5db; }
+  .ph.photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .8s cubic-bezier(.2,.8,.2,1); }
+  .card:hover .ph.photo img { transform: scale(1.04); }
   .ph span { font-size: .68rem; letter-spacing: .28em; text-indent: .28em; text-transform: uppercase; color: rgba(52,58,54,.45); }
   .info { padding: 18px 18px 20px; display: flex; flex-direction: column; gap: 8px; }
   .info h3 { font-weight: 500; font-size: .92rem; letter-spacing: .16em; text-transform: uppercase; color: var(--graphite); }
-  .desc { font-size: .72rem; letter-spacing: .12em; color: rgba(52,58,54,.6); }
+  .desc { font-family: Georgia, "Times New Roman", serif; font-size: .88rem; line-height: 1.55; color: rgba(52,58,54,.7); }
   .row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; }
   .price { font-size: .95rem; letter-spacing: .1em; color: #5f7a5a; }
   .row button { font: inherit; font-size: .64rem; letter-spacing: .2em; text-transform: uppercase; color: var(--graphite);
@@ -151,7 +154,7 @@
     .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
     .info { padding: 12px 12px 14px; }
     .info h3 { font-size: .74rem; letter-spacing: .1em; }
-    .desc { font-size: .62rem; }
+    .desc { font-size: .78rem; }
     .row { flex-wrap: wrap; }
     .row button { font-size: .56rem; padding: .6em 1em; }
     .sec-head h2 { letter-spacing: .2em; text-indent: .2em; }
@@ -197,11 +200,11 @@
   <section id="products" aria-label="Products">
     <div class="grid">
       <article class="card">
-        <div class="ph" role="img" aria-label="Product image placeholder"><span>Product image</span></div>
+        <div class="ph photo"><img src="assets/products/necklace-purifier.webp" alt="White OFFGRID necklace air purifier on a black cord" width="1254" height="1254" loading="lazy" decoding="async"></div>
         <div class="info">
-          <h3>Product 1</h3>
-          <p class="desc">Short description</p>
-          <div class="row"><span class="price">$00.00</span><button type="button" data-add-to-cart data-id="ap-1" data-name="Product 1" data-price="0">Add to cart</button></div>
+          <h3>Necklace Air Purifier</h3>
+          <p class="desc">Your own bubble of cleaner air. Releases 6.5M+ negative ions/cm&sup3;, runs 20+ hours on a charge, and stays completely silent. No filters to replace.</p>
+          <div class="row"><span class="price">&#8377;1,999</span><button type="button" data-add-to-cart data-id="necklace-purifier" data-name="Necklace Air Purifier" data-price="1999" data-img="assets/products/necklace-purifier.webp">Add to cart</button></div>
         </div>
       </article>
       <article class="card">
@@ -209,7 +212,7 @@
         <div class="info">
           <h3>Product 2</h3>
           <p class="desc">Short description</p>
-          <div class="row"><span class="price">$00.00</span><button type="button" data-add-to-cart data-id="ap-2" data-name="Product 2" data-price="0">Add to cart</button></div>
+          <div class="row"><span class="price">&#8377;0</span><button type="button" data-add-to-cart data-id="ap-2" data-name="Product 2" data-price="0">Add to cart</button></div>
         </div>
       </article>
       <article class="card">
@@ -217,7 +220,7 @@
         <div class="info">
           <h3>Product 3</h3>
           <p class="desc">Short description</p>
-          <div class="row"><span class="price">$00.00</span><button type="button" data-add-to-cart data-id="ap-3" data-name="Product 3" data-price="0">Add to cart</button></div>
+          <div class="row"><span class="price">&#8377;0</span><button type="button" data-add-to-cart data-id="ap-3" data-name="Product 3" data-price="0">Add to cart</button></div>
         </div>
       </article>
       <article class="card">
@@ -225,7 +228,7 @@
         <div class="info">
           <h3>Product 4</h3>
           <p class="desc">Short description</p>
-          <div class="row"><span class="price">$00.00</span><button type="button" data-add-to-cart data-id="ap-4" data-name="Product 4" data-price="0">Add to cart</button></div>
+          <div class="row"><span class="price">&#8377;0</span><button type="button" data-add-to-cart data-id="ap-4" data-name="Product 4" data-price="0">Add to cart</button></div>
         </div>
       </article>
       <article class="card">
@@ -233,7 +236,7 @@
         <div class="info">
           <h3>Product 5</h3>
           <p class="desc">Short description</p>
-          <div class="row"><span class="price">$00.00</span><button type="button" data-add-to-cart data-id="ap-5" data-name="Product 5" data-price="0">Add to cart</button></div>
+          <div class="row"><span class="price">&#8377;0</span><button type="button" data-add-to-cart data-id="ap-5" data-name="Product 5" data-price="0">Add to cart</button></div>
         </div>
       </article>
       <article class="card">
@@ -241,7 +244,7 @@
         <div class="info">
           <h3>Product 6</h3>
           <p class="desc">Short description</p>
-          <div class="row"><span class="price">$00.00</span><button type="button" data-add-to-cart data-id="ap-6" data-name="Product 6" data-price="0">Add to cart</button></div>
+          <div class="row"><span class="price">&#8377;0</span><button type="button" data-add-to-cart data-id="ap-6" data-name="Product 6" data-price="0">Add to cart</button></div>
         </div>
       </article>
       <article class="card">
@@ -249,7 +252,7 @@
         <div class="info">
           <h3>Product 7</h3>
           <p class="desc">Short description</p>
-          <div class="row"><span class="price">$00.00</span><button type="button" data-add-to-cart data-id="ap-7" data-name="Product 7" data-price="0">Add to cart</button></div>
+          <div class="row"><span class="price">&#8377;0</span><button type="button" data-add-to-cart data-id="ap-7" data-name="Product 7" data-price="0">Add to cart</button></div>
         </div>
       </article>
       <article class="card">
@@ -257,7 +260,7 @@
         <div class="info">
           <h3>Product 8</h3>
           <p class="desc">Short description</p>
-          <div class="row"><span class="price">$00.00</span><button type="button" data-add-to-cart data-id="ap-8" data-name="Product 8" data-price="0">Add to cart</button></div>
+          <div class="row"><span class="price">&#8377;0</span><button type="button" data-add-to-cart data-id="ap-8" data-name="Product 8" data-price="0">Add to cart</button></div>
         </div>
       </article>
     </div>
