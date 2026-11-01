@@ -16,8 +16,6 @@
         {%- endif -%}
         <div class="meta">
           <h3>{{ block.settings.name | escape }}</h3>
-          <p class="role">{{ block.settings.role | escape }}</p>
-          <p class="bio">{{ block.settings.bio | escape }}</p>
         </div>
       </article>
     {%- endfor -%}
@@ -45,8 +43,6 @@
           { "value": "object-position: 50% 75%", "label": "Lower part" }
         ] },
         { "type": "text", "id": "name", "label": "Name", "default": "Founder name" },
-        { "type": "text", "id": "role", "label": "Role", "default": "Role" },
-        { "type": "textarea", "id": "bio", "label": "Short bio", "default": "A short line about this founder goes here." },
         { "type": "text", "id": "theme_image", "label": "Built-in photo file", "info": "Used only when no photo is picked above." }
       ]
     }
