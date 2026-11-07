@@ -19,7 +19,6 @@
   html { scroll-behavior: smooth; }
   html, body { width: 100%; background: var(--sage); color: var(--graphite); }
   body { min-height: 100vh; min-height: 100dvh; overflow-x: hidden; }
-  body.loading { overflow: hidden; height: 100vh; height: 100dvh; }     /* no scrolling until the loader has opened */
   canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
   /* ---------- Hero ---------- */
@@ -119,19 +118,6 @@
     background: var(--cyan); color: var(--jet); border-color: var(--cyan); outline: none;
     letter-spacing: .38em;
   }
-
-  /* ---------- Loader ---------- */
-  #loader {
-    position: fixed; inset: 0; z-index: 10; background: transparent;
-  }
-  #loader.done { pointer-events: none; }
-  .panel { position: absolute; left: 0; right: 0; height: 50.2%; background: var(--sage); will-change: transform; }
-  .panel.top { top: 0; } .panel.bot { bottom: 0; }
-  #bar {
-    position: absolute; left: 50%; top: 50%; width: min(300px, 56vw); height: 3px;
-    transform: translate(-50%, -50%); background: rgba(52,58,54,.16); border-radius: 2px; overflow: hidden;
-  }
-  #bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--graphite), var(--moss), var(--ivory)); }
 
   @media (prefers-reduced-motion: reduce) {
     #hero::after { animation: none; }
@@ -236,7 +222,7 @@
 
 </style>
 </head>
-<body class="loading">
+<body>
 
 <main id="hero">
   <canvas id="morph"></canvas>
@@ -312,11 +298,6 @@
   <p class="fine">&copy; OFFGRID. Own every breath.</p>
 </footer>
 
-<div id="loader" aria-hidden="true">
-  <i class="panel top"></i><i class="panel bot"></i>
-  <canvas id="wave"></canvas>
-  <div id="bar"><i></i></div>
-</div>
 
 <script src="assets/cart.js"></script>
 <script>
@@ -367,68 +348,7 @@
     gl.viewport(0, 0, w, hgt);
   }
 
-  /* ---------- Scroll wave field (loader) ---------- */
-  let openStart = 0, heroReady = false;   // morph clock only starts once the hero is revealed
-  const OPEN_MS = 1400;
-  const LOAD_MS = 1200;
-  const loadStart = performance.now();
-  let vortexRunning = true;
-  const waveCanvas = document.getElementById('wave');
-  const wctx = waveCanvas.getContext('2d');
-  const barFill = document.querySelector('#bar i');
-  const panelTop = document.querySelector('.panel.top'), panelBot = document.querySelector('.panel.bot');
-  const morphEl = document.getElementById('morph');
-  const barEl = document.getElementById('bar');
-  const COLORS = ['rgb(247,243,233)', 'rgb(95,122,90)', 'rgb(52,58,54)'];   // ivory -> moss -> graphite (matte, on sage)
-  const N = 12000;
-  const parts = Array.from({ length: N }, (_, i) => {
-    const g = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;      // ~gaussian across the band
-    const spark = Math.random() < .14 ? (Math.random() - .5) * 5 : 0;           // loose particles far from the core
-    return {
-      x: Math.random(), band: i % 2, d: g + spark, v: .5 + Math.random() * 1.1,
-      s: .5 + Math.random() * 1.5, a: .2 + Math.random() * .8, hot: Math.random() < .06,
-      c: Math.abs(g) < .35 ? 2 : Math.abs(g) < .75 ? 1 : 0
-    };
-  });
-  let wT = 0, wLast = performance.now();
-  function waveFrame(now) {
-    if (!vortexRunning) return;
-    const dt = Math.min(.05, (now - wLast) / 1000); wLast = now;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const W = Math.floor(innerWidth * dpr), H = Math.floor(innerHeight * dpr);
-    if (waveCanvas.width !== W || waveCanvas.height !== H) { waveCanvas.width = W; waveCanvas.height = H; }
-
-    const oe = openStart ? Math.min(1, (now - openStart) / OPEN_MS) : 0;
-    const open = oe < .5 ? 4*oe*oe*oe : 1 - Math.pow(-2*oe + 2, 3) / 2;
-    wT += dt * (1 + open * 2.5);
-
-    const pr = Math.min(1, (now - loadStart) / LOAD_MS);
-    barFill.style.width = (pr * pr * (3 - 2 * pr) * 100) + '%';
-    barEl.style.opacity = Math.max(0, 1 - open * 3);
-    panelTop.style.transform = `translateY(${-open * 100}%)`;
-    panelBot.style.transform = `translateY(${open * 100}%)`;
-    morphEl.style.transform = `scale(${1 + .4 * (1 - open)})`;
-
-    wctx.clearRect(0, 0, W, H);
-    wctx.globalCompositeOperation = 'source-over';             // plain layering, no additive glow
-    const size = Math.min(W, H);
-    for (const p of parts) {
-      const X = ((p.x + wT * .045 * p.v) % 1) * W;
-      const wave = Math.sin(X / W * 9 + wT * 1.1) * H * .05 + Math.sin(X / W * 22 - wT * .8) * H * .018;
-      const spread = H * .085 * (.55 + .45 * Math.sin(X / W * 6 + wT * .4));
-      const top = p.band === 0;
-      let y = (top ? H * .2 + wave : H * .8 - wave) + p.d * spread;
-      y += (top ? -1 : 1) * open * H * .8;
-      if (y < -10 || y > H + 10) continue;
-      wctx.globalAlpha = p.a * (1 - open * .7);
-      wctx.fillStyle = p.hot ? 'rgb(247,243,233)' : COLORS[p.c];
-      const s = p.s * dpr;
-      wctx.fillRect(X, y, s, s);
-    }
-    wctx.globalAlpha = 1;
-    requestAnimationFrame(waveFrame);
-  }
-  requestAnimationFrame(waveFrame);
+  let heroReady = false;   // morph clock only starts once the hero is shown
 
   /* ---------- Procedural "images" for the hero ---------- */
   const W = 1920, H = 1080;
@@ -629,7 +549,7 @@
       hgl.drawArrays(hgl.TRIANGLE_STRIP, 0, 4);
       requestAnimationFrame(frame);
     }
-    // draw one frame immediately so the hero is ready beneath the loader
+    // start drawing as soon as the photos are in
     morphStart = () => { if (!running) { running = true; phaseStart = performance.now(); requestAnimationFrame(frame); } };
     // product photography; procedural scenes only if the images fail to load
     const PHOTOS = ['assets/hero-1.webp', 'assets/hero-2.webp', 'assets/hero-3.webp'];
@@ -671,64 +591,12 @@
     setTimeout(() => document.getElementById('sub').classList.add('in'), letters.length * 230 + 250);
   }
 
-  /* ---------- Loader sequence ---------- */
-  const loader = document.getElementById('loader');
-
+  /* ---------- Start: show the hero as soon as the fonts are in ---------- */
   const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-  Promise.all([Promise.race([fontsReady.catch(() => {}), new Promise(r => setTimeout(r, LOAD_MS))]), new Promise(r => setTimeout(r, LOAD_MS))]).then(() => {
-    openStart = performance.now();
-    setTimeout(() => { heroReady = true; }, OPEN_MS);
-    loader.classList.add('done');
-    setTimeout(playTitle, OPEN_MS * .6);
-    setTimeout(() => { vortexRunning = false; loader.style.display = 'none'; document.body.classList.remove('loading'); }, OPEN_MS + 100);
+  Promise.race([fontsReady.catch(() => {}), new Promise(r => setTimeout(r, 800))]).then(() => {
+    heroReady = true;
+    playTitle();
   });
-
-
-  /* ---------- Fade the sections in as they scroll into view ---------- */
-  const rv = document.querySelectorAll('.reveal');
-  if ('IntersectionObserver' in window) {
-    const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { threshold: .15 });
-    rv.forEach(el => io.observe(el));
-  } else { rv.forEach(el => el.classList.add('in')); }
-
-  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  /* ---------- Tagline morph: one line melts into the next ---------- */
-  const m1 = document.getElementById('m1'), m2 = document.getElementById('m2'), mh = document.getElementById('tagline');
-  if (m1 && m2) {
-    const LINES = ['Own every breath.', 'The air you deserve.', 'Breathe freely, anywhere.', 'Clean air, worn close.'];
-    const HOLD_T = 2600, MORPH_T = 1400;
-    let cur = 0, phaseStart = 0, morphing = false;
-    function paint(f) {                                      // f: 0 = still the old line, 1 = fully the new one
-      f = Math.min(Math.max(f, 0), 1);
-      const g = 1 - f;
-      m2.style.filter = 'blur(' + Math.min(8 / f - 8, 100) + 'px)'; m2.style.opacity = Math.pow(f, .4);
-      m1.style.filter = 'blur(' + Math.min(8 / g - 8, 100) + 'px)'; m1.style.opacity = Math.pow(g, .4);
-    }
-    function settle(i) {
-      m1.textContent = LINES[i]; m1.style.filter = 'none'; m1.style.opacity = 1;
-      m2.textContent = ''; m2.style.filter = 'none'; m2.style.opacity = 0;
-    }
-    function fitTagline() {                                  // reserve the height of the tallest line so nothing below jumps
-      const probe = mh.cloneNode(false); probe.removeAttribute('id'); probe.removeAttribute('aria-label');
-      probe.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;filter:none;width:' + mh.clientWidth + 'px';
-      const sp = document.createElement('span'); probe.appendChild(sp); mh.parentNode.appendChild(probe);
-      let h = 0; LINES.forEach(t => { sp.textContent = t; h = Math.max(h, probe.offsetHeight); });
-      probe.remove(); mh.style.minHeight = h + 'px';
-    }
-    function tick(now) {
-      if (!phaseStart) phaseStart = now;
-      const el = now - phaseStart;
-      if (!morphing && el > HOLD_T) { morphing = true; phaseStart = now; m2.textContent = LINES[(cur + 1) % LINES.length]; }
-      else if (morphing) {
-        const f = el / MORPH_T;
-        if (f >= 1) { cur = (cur + 1) % LINES.length; settle(cur); morphing = false; phaseStart = now; } else paint(f);
-      }
-      requestAnimationFrame(tick);
-    }
-    fitTagline(); addEventListener('resize', fitTagline);
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTagline);
-    if (!reduceMotion) requestAnimationFrame(tick);
-  }
 })();
 </script>
 </body>

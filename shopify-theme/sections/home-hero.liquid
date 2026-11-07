@@ -26,12 +26,6 @@
   <a id="shop" href="{% render 'shop-url' %}">{{ section.settings.shop_label | escape }}</a>
 </main>
 
-<div id="loader" aria-hidden="true">
-  <i class="panel top"></i><i class="panel bot"></i>
-  <canvas id="wave"></canvas>
-  <div id="bar"><i></i></div>
-</div>
-
 <script>
 (() => {
   const PAL = { jet: '#343A36', amethyst: '#5f7a5a', cyan: '#A9BCA5' };
@@ -80,68 +74,7 @@
     gl.viewport(0, 0, w, hgt);
   }
 
-  /* ---------- Scroll wave field (loader) ---------- */
-  let openStart = 0, heroReady = false;   // morph clock only starts once the hero is revealed
-  const OPEN_MS = 1400;
-  const LOAD_MS = 1200;
-  const loadStart = performance.now();
-  let vortexRunning = true;
-  const waveCanvas = document.getElementById('wave');
-  const wctx = waveCanvas.getContext('2d');
-  const barFill = document.querySelector('#bar i');
-  const panelTop = document.querySelector('.panel.top'), panelBot = document.querySelector('.panel.bot');
-  const morphEl = document.getElementById('morph');
-  const barEl = document.getElementById('bar');
-  const COLORS = ['rgb(247,243,233)', 'rgb(95,122,90)', 'rgb(52,58,54)'];   // ivory -> moss -> graphite (matte, on sage)
-  const N = 12000;
-  const parts = Array.from({ length: N }, (_, i) => {
-    const g = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;      // ~gaussian across the band
-    const spark = Math.random() < .14 ? (Math.random() - .5) * 5 : 0;           // loose particles far from the core
-    return {
-      x: Math.random(), band: i % 2, d: g + spark, v: .5 + Math.random() * 1.1,
-      s: .5 + Math.random() * 1.5, a: .2 + Math.random() * .8, hot: Math.random() < .06,
-      c: Math.abs(g) < .35 ? 2 : Math.abs(g) < .75 ? 1 : 0
-    };
-  });
-  let wT = 0, wLast = performance.now();
-  function waveFrame(now) {
-    if (!vortexRunning) return;
-    const dt = Math.min(.05, (now - wLast) / 1000); wLast = now;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const W = Math.floor(innerWidth * dpr), H = Math.floor(innerHeight * dpr);
-    if (waveCanvas.width !== W || waveCanvas.height !== H) { waveCanvas.width = W; waveCanvas.height = H; }
-
-    const oe = openStart ? Math.min(1, (now - openStart) / OPEN_MS) : 0;
-    const open = oe < .5 ? 4*oe*oe*oe : 1 - Math.pow(-2*oe + 2, 3) / 2;
-    wT += dt * (1 + open * 2.5);
-
-    const pr = Math.min(1, (now - loadStart) / LOAD_MS);
-    barFill.style.width = (pr * pr * (3 - 2 * pr) * 100) + '%';
-    barEl.style.opacity = Math.max(0, 1 - open * 3);
-    panelTop.style.transform = `translateY(${-open * 100}%)`;
-    panelBot.style.transform = `translateY(${open * 100}%)`;
-    morphEl.style.transform = `scale(${1 + .4 * (1 - open)})`;
-
-    wctx.clearRect(0, 0, W, H);
-    wctx.globalCompositeOperation = 'source-over';             // plain layering, no additive glow
-    const size = Math.min(W, H);
-    for (const p of parts) {
-      const X = ((p.x + wT * .045 * p.v) % 1) * W;
-      const wave = Math.sin(X / W * 9 + wT * 1.1) * H * .05 + Math.sin(X / W * 22 - wT * .8) * H * .018;
-      const spread = H * .085 * (.55 + .45 * Math.sin(X / W * 6 + wT * .4));
-      const top = p.band === 0;
-      let y = (top ? H * .2 + wave : H * .8 - wave) + p.d * spread;
-      y += (top ? -1 : 1) * open * H * .8;
-      if (y < -10 || y > H + 10) continue;
-      wctx.globalAlpha = p.a * (1 - open * .7);
-      wctx.fillStyle = p.hot ? 'rgb(247,243,233)' : COLORS[p.c];
-      const s = p.s * dpr;
-      wctx.fillRect(X, y, s, s);
-    }
-    wctx.globalAlpha = 1;
-    requestAnimationFrame(waveFrame);
-  }
-  requestAnimationFrame(waveFrame);
+  let heroReady = false;   // morph clock only starts once the hero is shown
 
   /* ---------- Procedural "images" for the hero ---------- */
   const W = 1920, H = 1080;
@@ -342,7 +275,7 @@
       hgl.drawArrays(hgl.TRIANGLE_STRIP, 0, 4);
       requestAnimationFrame(frame);
     }
-    // draw one frame immediately so the hero is ready beneath the loader
+    // start drawing as soon as the photos are in
     morphStart = () => { if (!running) { running = true; phaseStart = performance.now(); requestAnimationFrame(frame); } };
     // product photography (set in the theme editor); procedural scenes only if the images fail to load
     const PHOTOS = {{ photos | json }};
@@ -382,16 +315,11 @@
     setTimeout(() => document.getElementById('sub').classList.add('in'), letters.length * 230 + 250);
   }
 
-  /* ---------- Loader sequence ---------- */
-  const loader = document.getElementById('loader');
-
+  /* ---------- Start: show the hero as soon as the fonts are in ---------- */
   const fontsReady = (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
-  Promise.all([Promise.race([fontsReady.catch(() => {}), new Promise(r => setTimeout(r, LOAD_MS))]), new Promise(r => setTimeout(r, LOAD_MS))]).then(() => {
-    openStart = performance.now();
-    setTimeout(() => { heroReady = true; }, OPEN_MS);
-    loader.classList.add('done');
-    setTimeout(playTitle, OPEN_MS * .6);
-    setTimeout(() => { vortexRunning = false; loader.style.display = 'none'; document.body.classList.remove('loading'); }, OPEN_MS + 100);
+  Promise.race([fontsReady.catch(() => {}), new Promise(r => setTimeout(r, 800))]).then(() => {
+    heroReady = true;
+    playTitle();
   });
 })();
 </script>

@@ -18,7 +18,7 @@
 <script>window.OFFGRID_CART = {{ cart | json }};</script>
 {{ content_for_header }}
 </head>
-<body class="template-{{ template.name }}{% if template.name == 'index' %} loading{% endif %}">
+<body class="template-{{ template.name }}">
   {%- unless template.name == 'index' -%}
     <nav class="site-nav{% if template.name == 'collection' %} over{% endif %}" aria-label="Primary">
       {%- render 'nav-links' -%}
