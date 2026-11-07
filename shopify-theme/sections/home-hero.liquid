@@ -34,7 +34,7 @@
 
 <script>
 (() => {
-  const PAL = { jet: '#050505', amethyst: '#3B0A6B', cyan: '#62A3AE' };
+  const PAL = { jet: '#343A36', amethyst: '#5f7a5a', cyan: '#A9BCA5' };
 
   /* ---------- GL helpers ---------- */
   const VERT = `attribute vec2 p; void main(){ gl_Position = vec4(p,0.,1.); }`;
@@ -92,7 +92,7 @@
   const panelTop = document.querySelector('.panel.top'), panelBot = document.querySelector('.panel.bot');
   const morphEl = document.getElementById('morph');
   const barEl = document.getElementById('bar');
-  const COLORS = ['rgb(66,26,112)', 'rgb(106,70,152)', 'rgb(160,140,192)'];   // amethyst -> dusty lilac (matte)
+  const COLORS = ['rgb(247,243,233)', 'rgb(95,122,90)', 'rgb(52,58,54)'];   // ivory -> moss -> graphite (matte, on sage)
   const N = 12000;
   const parts = Array.from({ length: N }, (_, i) => {
     const g = (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;      // ~gaussian across the band
@@ -134,7 +134,7 @@
       y += (top ? -1 : 1) * open * H * .8;
       if (y < -10 || y > H + 10) continue;
       wctx.globalAlpha = p.a * (1 - open * .7);
-      wctx.fillStyle = p.hot ? 'rgb(98,163,174)' : COLORS[p.c];
+      wctx.fillStyle = p.hot ? 'rgb(247,243,233)' : COLORS[p.c];
       const s = p.s * dpr;
       wctx.fillRect(X, y, s, s);
     }
@@ -302,7 +302,7 @@
         float mx = smoothstep(.0, 1., e);
         vec3 col = mix(ca.rgb, cb.rgb, mx);
         float edge = smoothstep(.02, .18, e) * (1. - smoothstep(.18, .38, e));
-        col += vec3(.38, .64, .68) * edge * .16 * k;          // a muted teal seam while photos blend
+        col += vec3(.66, .74, .65) * edge * .16 * k;          // a soft sage seam while photos blend
         gl_FragColor = vec4(col, 1.);
       }`);
     const U = n => hgl.getUniformLocation(hp, n);
