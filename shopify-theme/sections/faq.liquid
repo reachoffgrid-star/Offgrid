@@ -1,5 +1,5 @@
 <section id="faq" aria-label="Frequently asked questions">
-  <header class="faq-head"><p>{{ section.settings.eyebrow | escape }}</p><h2>{{ section.settings.heading | escape }}</h2><div class="line"></div></header>
+  <header class="faq-head">{% if section.settings.eyebrow != blank %}<p>{{ section.settings.eyebrow | escape }}</p>{% endif %}<h2>{{ section.settings.heading | escape }}</h2><div class="line"></div></header>
   {%- for block in section.blocks %}
     <details class="qa" {{ block.shopify_attributes }}>
       <summary>{{ block.settings.question | escape }}</summary>
@@ -13,8 +13,8 @@
   "name": "Questions",
   "tag": "div",
   "settings": [
-    { "type": "text", "id": "eyebrow", "label": "Small heading", "default": "Good to know" },
-    { "type": "text", "id": "heading", "label": "Heading", "default": "Questions" }
+    { "type": "text", "id": "eyebrow", "label": "Small heading", "info": "Optional line above the heading." },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Frequently Asked Questions" }
   ],
   "blocks": [
     {

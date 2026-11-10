@@ -1,30 +1,60 @@
 {
   "sections": {
-    "hero": { "type": "ap-hero", "settings": {} },
-    "products": { "type": "main-collection", "settings": {} },
+    "hero": {
+      "type": "ap-hero",
+      "settings": {}
+    },
+    "products": {
+      "type": "main-collection",
+      "settings": {}
+    },
     "faq": {
       "type": "faq",
       "blocks": {
-        "q1": { "type": "question", "settings": {
-          "question": "Does it give off radiation? Is it safe to sleep with?",
-          "answer": "<p>No. OFFGRID cleans the air around you with negative ions, over 6.5 million per cm³, not radiation. It runs on a small rechargeable battery, like a pair of earbuds, and it is completely silent.</p><p>For sleep, take it off and set it on your bedside table, where it keeps working. As with any necklace on a cord, it should not be worn while you sleep.</p>"
-        } },
-        "q2": { "type": "question", "settings": {
-          "question": "Can I take it on a flight? Will it explode?",
-          "answer": "<p>Yes, you can fly with it. Like earbuds and phones, it has a small rechargeable lithium battery, so pack it in your carry-on bag rather than your checked luggage, and switch it off if the crew asks. Rules vary a little between airlines, so it is worth checking yours before you travel.</p>"
-        } },
-        "q3": { "type": "question", "settings": {
-          "question": "How long does a charge last?",
-          "answer": "<p>One full charge gives you 20+ hours of fresh air, enough to wear it all day and keep it on your bedside table at night.</p>"
-        } },
-        "q4": { "type": "question", "settings": {
-          "question": "Is it waterproof?",
-          "answer": "<p>It is made to be worn, not dunked. Keep it out of the shower, the pool and heavy rain, and if it does get wet, wipe it dry before you use it again.</p>"
-        } }
+        "q1": {
+          "type": "question",
+          "settings": {
+            "question": "Does it give off radiation? Is it safe to sleep with?",
+            "answer": "<p>No. OFFGRID cleans the air around you with negative ions, over 6.5 million per cm³, not radiation. It runs on a small rechargeable battery, like a pair of earbuds, and it is completely silent.</p><p>For sleep, take it off and set it on your bedside table, where it keeps working. As with any necklace on a cord, it should not be worn while you sleep.</p>"
+          }
+        },
+        "q2": {
+          "type": "question",
+          "settings": {
+            "question": "Can I take it on a flight? Will it explode?",
+            "answer": "<p>Yes, you can fly with it. Like earbuds and phones, it has a small rechargeable lithium battery, so pack it in your carry-on bag rather than your checked luggage, and switch it off if the crew asks. Rules vary a little between airlines, so it is worth checking yours before you travel.</p>"
+          }
+        },
+        "q3": {
+          "type": "question",
+          "settings": {
+            "question": "How long does a charge last?",
+            "answer": "<p>One full charge gives you 20+ hours of fresh air, enough to wear it all day and keep it on your bedside table at night.</p>"
+          }
+        },
+        "q4": {
+          "type": "question",
+          "settings": {
+            "question": "Is it waterproof?",
+            "answer": "<p>It is made to be worn, not dunked. Keep it out of the shower, the pool and heavy rain, and if it does get wet, wipe it dry before you use it again.</p>"
+          }
+        }
       },
-      "block_order": ["q1", "q2", "q3", "q4"],
-      "settings": {}
+      "block_order": [
+        "q1",
+        "q2",
+        "q3",
+        "q4"
+      ],
+      "settings": {
+        "eyebrow": "",
+        "heading": "Frequently Asked Questions"
+      }
     }
   },
-  "order": ["hero", "products", "faq"]
+  "order": [
+    "hero",
+    "products",
+    "faq"
+  ]
 }
