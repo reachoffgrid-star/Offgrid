@@ -200,10 +200,7 @@
   @media (max-width: 420px) { .founders-grid { grid-template-columns: 1fr; } }
 
   /* ---------- Tagline that melts from one line into the next ---------- */
-  .morph { display: grid; filter: url(#threshold); }
-  #story h2.morph { font-size: clamp(.9rem, 3.4vw, 2.5rem); letter-spacing: .1em; text-indent: .1em; white-space: nowrap; line-height: 1.3; }   /* small enough that every line fits on one row */
-  .morph span { grid-area: 1 / 1; display: block; user-select: none; will-change: filter, opacity; }
-  .morph span + span { opacity: 0; }
+  #story h2.tagline { font-size: clamp(.9rem, 3.4vw, 2.5rem); letter-spacing: .1em; text-indent: .1em; white-space: nowrap; line-height: 1.3; }
 
   .cart-count { display: inline-grid; place-items: center; min-width: 1.7em; height: 1.7em; margin-left: .45em; padding: 0 .45em;
     border-radius: 999px; font-size: .82em; letter-spacing: 0; text-indent: 0; vertical-align: middle;

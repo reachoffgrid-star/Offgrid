@@ -210,10 +210,7 @@
   @media (max-width: 420px) { .founders-grid { grid-template-columns: 1fr; } }
 
   /* ---------- Tagline that melts from one line into the next ---------- */
-  .morph { display: grid; filter: url(#threshold); }
-  #story h2.morph { font-size: clamp(.9rem, 3.4vw, 2.5rem); letter-spacing: .1em; text-indent: .1em; white-space: nowrap; line-height: 1.3; }   /* small enough that every line fits on one row */
-  .morph span { grid-area: 1 / 1; display: block; user-select: none; will-change: filter, opacity; }
-  .morph span + span { opacity: 0; }
+  #story h2.tagline { font-size: clamp(.9rem, 3.4vw, 2.5rem); letter-spacing: .1em; text-indent: .1em; white-space: nowrap; line-height: 1.3; }
 
   .cart-count { display: inline-grid; place-items: center; min-width: 1.7em; height: 1.7em; margin-left: .45em; padding: 0 .45em;
     border-radius: 999px; font-size: .82em; letter-spacing: 0; text-indent: 0; vertical-align: middle;
@@ -235,14 +232,10 @@
   <a id="shop" href="air-purifiers.html">Shop Now</a>
 </main>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
-  <filter id="threshold"><feColorMatrix in="SourceGraphic" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 255 -140"/></filter>
-</defs></svg>
-
 <section id="story" aria-label="About OFFGRID">
   <div class="inner">
     <p class="eyebrow reveal">Air Purifier Necklaces</p>
-    <div class="reveal"><h2 class="morph" id="tagline" aria-label="Own every breath. The air you deserve."><span id="m1" aria-hidden="true">Own every breath.</span><span id="m2" aria-hidden="true"></span></h2></div>
+    <h2 class="tagline reveal">Own your breath.</h2>
     <div class="rule2 reveal"></div>
     <p class="copy reveal">OFFGRID air purifier necklaces are made to sit close to where you breathe. Light on the chest, easy to forget you are wearing, and ready to go wherever you go: the commute, the office, the long trip home. Clean air, on your own terms.</p>
     <div class="trio">
