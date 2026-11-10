@@ -68,7 +68,7 @@
   }
   function fit(canvas, gl) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const w = Math.max(1, Math.floor(innerWidth * dpr)), hgt = Math.max(1, Math.floor(innerHeight * dpr));
+    const w = Math.max(1, Math.floor(canvas.clientWidth * dpr)), hgt = Math.max(1, Math.floor(canvas.clientHeight * dpr));
     if (canvas.width !== w || canvas.height !== hgt) { canvas.width = w; canvas.height = hgt; }
     gl.viewport(0, 0, w, hgt);
   }
