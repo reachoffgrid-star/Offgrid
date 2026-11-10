@@ -22,11 +22,12 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="layout">
         <ul class="lines">
           ${items.map(i => `
-            <li class="cline" data-id="${esc(i.id)}">
+            <li class="cline" data-key="${esc(i.key)}">
               ${i.img ? `<img class="thumb" src="${esc(thumb(i.img))}" alt="">` : `<div class="thumb" role="img" aria-label="No product photo"><span>Image</span></div>`}
               <div>
                 <div class="name"><a href="${esc(i.url)}" style="color:inherit;text-decoration:none">${esc(i.name)}</a></div>
                 ${i.variant ? `<div class="unit">${esc(i.variant)}</div>` : ''}
+                ${i.props.length ? `<div class="unit picks">${i.props.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' &middot; ')}</div>` : ''}
                 <div class="unit">${Cart.money(i.price)} each</div>
                 <div class="qty" role="group" aria-label="Quantity">
                   <button type="button" data-step="-1" aria-label="One fewer">&minus;</button>
@@ -58,14 +59,14 @@ document.addEventListener('DOMContentLoaded', () => {
   view.addEventListener('click', e => {
     const line = e.target.closest('.cline');
     if (!line) return;
-    const id = line.dataset.id;
+    const key = line.dataset.key;                    // each line on its own: two packs with different colours are two lines
     const step = e.target.closest('[data-step]');
     if (step) {
       const out = line.querySelector('output'), next = Number(out.textContent) + Number(step.dataset.step);
       out.textContent = Math.max(0, next);
-      Cart.setQty(id, next);
+      Cart.setLineQty(key, next);
     }
-    if (e.target.closest('.remove')) Cart.remove(id);
+    if (e.target.closest('.remove')) Cart.setLineQty(key, 0);
   });
   document.addEventListener('cart:change', () => { note = ''; render(); });
   document.addEventListener('cart:error', e => { note = e.detail.message; render(); });

@@ -1,0 +1,7 @@
+{%- comment -%}
+  Extra attributes for a product's add-to-cart button.
+  A tag like "pick:3" makes it a pack where the customer chooses White or Blush Pink for each of the 3 items.
+{%- endcomment -%}
+{%- for tag in product.tags -%}
+  {%- if tag contains 'pick:' %} data-pick="{{ tag | remove_first: 'pick:' | strip | escape }}" data-colours="White,Blush Pink"{%- break -%}{%- endif -%}
+{%- endfor -%}

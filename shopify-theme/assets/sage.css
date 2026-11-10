@@ -278,3 +278,28 @@
   .plain .results a { display: block; padding: 14px 18px; border-radius: 14px; background: var(--ivory); color: var(--graphite); text-decoration: none; border: 1px solid rgba(52,58,54,.12); }
   .plain .errors { margin-top: 12px; text-align: center; font-family: Georgia, serif; color: #8a3b3b; }
   .plain .muted { margin-top: 18px; text-align: center; font-family: Georgia, serif; color: rgba(52,58,54,.7); }
+
+  /* ---------- Colour picker for packs (pick White or Blush Pink for each item) ---------- */
+  dialog.pick { margin: auto; width: min(420px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: 20px;
+    background: var(--ivory); color: var(--graphite); box-shadow: 0 24px 60px rgba(30,36,32,.35); font-family: "Cinzel", Georgia, serif; }
+  dialog.pick::backdrop { background: rgba(52,58,54,.55); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+  dialog.pick form { padding: 26px 24px 22px; }
+  .pick-eyebrow { font-size: .62rem; letter-spacing: .36em; text-transform: uppercase; color: #5f7a5a; }
+  dialog.pick h3 { margin: .5rem 0 1.1rem; font-weight: 500; font-size: .95rem; letter-spacing: .12em; text-transform: uppercase; line-height: 1.4; }
+  dialog.pick fieldset { border: 0; display: flex; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px solid rgba(52,58,54,.12); }
+  dialog.pick legend { float: left; width: 64px; padding: 0; font-size: .66rem; letter-spacing: .18em; text-transform: uppercase; color: rgba(52,58,54,.7); }
+  dialog.pick label { flex: 1; cursor: pointer; }
+  dialog.pick label input { position: absolute; opacity: 0; pointer-events: none; }
+  dialog.pick label span { display: flex; align-items: center; justify-content: center; gap: .5em; padding: .7em .6em; border-radius: 999px;
+    border: 1px solid rgba(52,58,54,.25); font-size: .64rem; letter-spacing: .12em; text-transform: uppercase; transition: background .25s, border-color .25s, color .25s; }
+  dialog.pick label span i { width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(52,58,54,.35); background: #fff; flex: none; }
+  dialog.pick label span i[data-colour="blush pink"] { background: #f2b8c0; }
+  dialog.pick label input:checked + span { background: var(--graphite); border-color: var(--graphite); color: var(--ivory); }
+  dialog.pick label input:focus-visible + span { outline: 2px solid #5f7a5a; outline-offset: 2px; }
+  .pick-actions { display: flex; gap: 10px; margin-top: 18px; }
+  .pick-actions button { flex: 1; font: inherit; font-size: .66rem; letter-spacing: .22em; text-transform: uppercase; cursor: pointer; padding: 1em; border-radius: 999px;
+    border: 1px solid var(--graphite); background: var(--graphite); color: var(--ivory); transition: background .3s, border-color .3s; }
+  .pick-actions button:hover, .pick-actions button:focus-visible { background: #5f7a5a; border-color: #5f7a5a; outline: none; }
+  .pick-actions button.ghost { background: transparent; color: var(--graphite); border-color: rgba(52,58,54,.4); }
+  .pick-actions button.ghost:hover, .pick-actions button.ghost:focus-visible { background: rgba(169,188,165,.35); }
+  .unit.picks { font-size: .82rem; color: rgba(52,58,54,.75); }

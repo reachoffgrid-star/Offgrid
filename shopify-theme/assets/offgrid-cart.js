@@ -1,6 +1,8 @@
 /* OFFGRID cart, kept in Shopify's own cart (the AJAX cart API) and shared by every page.
    - any button with data-add-to-cart and data-variant-id adds that variant;
      once it is in the cart the button turns into a  −  qty  +  stepper so more can be added
+   - a button that also has data-pick="3" is a pack where the customer chooses a colour for each item:
+     it opens a picker, and the choices go into the cart line as "Item 1: White" and so on
    - any element with class "cart-count" shows the number of items */
 (() => {
   const root = (window.Shopify && Shopify.routes && Shopify.routes.root) || '/';
@@ -20,20 +22,23 @@
   }));
 
   const line = v => cart.items.find(i => String(i.variant_id) === String(v));
+  const shown = props => Object.entries(props || {}).filter(([k, val]) => k[0] !== '_' && val !== '');
 
   const Cart = {
     items: () => cart.items.map(i => ({
-      id: String(i.variant_id), name: i.product_title, variant: i.variant_title, price: i.final_price / 100,
-      qty: i.quantity, img: i.image || '', url: i.url
+      key: i.key, id: String(i.variant_id), name: i.product_title, variant: i.variant_title, price: i.final_price / 100,
+      qty: i.quantity, img: i.image || '', url: i.url, props: shown(i.properties)
     })),
-    qty: v => (line(v) || { quantity: 0 }).quantity,
+    // every line of this variant together: a colour-picked pack can sit in the cart several times
+    qty: v => cart.items.reduce((n, i) => n + (String(i.variant_id) === String(v) ? i.quantity : 0), 0),
     count: () => cart.item_count,
     subtotal: () => cart.total_price / 100,
-    add: (v, qty = 1) => run(() => post('cart/add.js', { items: [{ id: Number(v), quantity: qty }] }).then(load)),
+    add: (v, qty = 1, properties) => run(() => post('cart/add.js', { items: [{ id: Number(v), quantity: qty, ...(properties ? { properties } : {}) }] }).then(load)),
     setQty: (v, qty) => run(() => {
       const l = line(v);
       return l ? post('cart/change.js', { id: l.key, quantity: Math.max(0, Math.min(99, qty)) }).then(set) : null;
     }),
+    setLineQty: (key, qty) => run(() => post('cart/change.js', { id: key, quantity: Math.max(0, Math.min(99, qty)) }).then(set)),
     remove: v => Cart.setQty(v, 0),
     refresh: () => run(load),
     sync: () => syncButtons(),
@@ -56,6 +61,11 @@
   // each add-to-cart button gets a sibling stepper; whichever fits the cart is shown
   function syncButtons() {
     document.querySelectorAll('[data-add-to-cart]').forEach(b => {
+      const q = Cart.qty(b.dataset.variantId);
+      if (b.dataset.pick) {                                    // packs stay a button: every add is a new choice of colours
+        b.textContent = q > 0 ? 'Add another' : 'Add to cart';
+        return;
+      }
       let st = b.nextElementSibling;
       if (!st || !st.classList.contains('qty-step')) {
         st = document.createElement('div');
@@ -65,12 +75,50 @@
         st.innerHTML = '<button type="button" data-dec aria-label="One fewer">&minus;</button><output aria-live="polite">0</output><button type="button" data-inc aria-label="One more">+</button>';
         b.after(st);
       }
-      const q = Cart.qty(b.dataset.variantId);
       st.querySelector('output').textContent = q;
       b.hidden = q > 0;
       st.hidden = q === 0;
     });
   }
+
+  /* ---------- colour picker for packs ---------- */
+  let dlg = null;
+  function pickColours(n, colours, name) {
+    if (!dlg) {
+      dlg = document.createElement('dialog');
+      dlg.className = 'pick';
+      document.body.appendChild(dlg);
+    }
+    const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const rows = Array.from({ length: n }, (_, i) => `
+      <fieldset>
+        <legend>Item ${i + 1}</legend>
+        ${colours.map((c, j) => `<label><input type="radio" name="item${i + 1}" value="${esc(c)}"${j === i % colours.length ? ' checked' : ''}><span><i data-colour="${esc(c.toLowerCase())}"></i>${esc(c)}</span></label>`).join('')}
+      </fieldset>`).join('');
+    dlg.innerHTML = `
+      <form method="dialog">
+        <p class="pick-eyebrow">Choose your colours</p>
+        <h3>${esc(name)}</h3>
+        ${rows}
+        <div class="pick-actions">
+          <button type="submit" value="cancel" class="ghost">Cancel</button>
+          <button type="submit" value="ok">Add to cart</button>
+        </div>
+      </form>`;
+    return new Promise(resolve => {
+      dlg.addEventListener('close', () => {
+        if (dlg.returnValue !== 'ok') return resolve(null);
+        const props = {};
+        for (let i = 1; i <= n; i++) props['Item ' + i] = dlg.querySelector(`input[name="item${i}"]:checked`).value;
+        resolve(props);
+      }, { once: true });
+      dlg.returnValue = '';
+      dlg.showModal();
+      dlg.querySelector('input:checked').focus();
+    });
+  }
+  // a click on the dimmed backdrop closes the picker
+  document.addEventListener('click', e => { if (dlg && e.target === dlg) dlg.close('cancel'); });
 
   // the cart may have changed in another tab, or this page came back from the browser's cache
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') Cart.refresh(); });
@@ -79,6 +127,15 @@
   document.addEventListener('click', e => {
     const add = e.target.closest('[data-add-to-cart]');
     if (add) {
+      if (add.dataset.pick) {
+        const colours = (add.dataset.colours || 'White,Blush Pink').split(',').map(s => s.trim());
+        pickColours(Number(add.dataset.pick), colours, add.dataset.name || '').then(props => {
+          if (!props) return add.focus();
+          add.disabled = true;
+          Cart.add(add.dataset.variantId, 1, props).then(() => { add.disabled = false; add.focus(); });
+        });
+        return;
+      }
       add.disabled = true;
       Cart.add(add.dataset.variantId).then(() => {
         add.disabled = false;

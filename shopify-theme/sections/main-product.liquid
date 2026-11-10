@@ -35,7 +35,7 @@
 
     <div class="row">
       {%- if variant.available -%}
-        <button type="button" data-add-to-cart data-variant-id="{{ variant.id }}" data-name="{{ product.title | escape }}">Add to cart</button>
+        <button type="button" data-add-to-cart data-variant-id="{{ variant.id }}" data-name="{{ product.title | escape }}"{% render 'pick-attrs', product: product %}>Add to cart</button>
       {%- else -%}
         <button type="button" disabled>Sold out</button>
       {%- endif -%}
