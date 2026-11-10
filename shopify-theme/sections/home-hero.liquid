@@ -10,20 +10,19 @@
   else
     assign p2 = 'hero-2.webp' | asset_url
   endif
+  assign photos = p1 | append: '|' | append: p2
   if section.settings.photo_3 != blank
     assign p3 = section.settings.photo_3 | image_url: width: 2400
-  else
-    assign p3 = 'hero-3.webp' | asset_url
+    assign photos = photos | append: '|' | append: p3
   endif
-  assign photos = p1 | append: '|' | append: p2 | append: '|' | append: p3 | split: '|'
+  assign photos = photos | split: '|'
 -%}
 <main id="hero">
   <canvas id="morph"></canvas>
-  <div id="stage"><div id="shake"><h1 id="title" aria-label="{{ section.settings.title | escape }}"></h1><p id="sub">{{ section.settings.subtitle | escape }}</p></div></div>
+  <div id="stage"><div id="shake"><h1 id="title" aria-label="{{ section.settings.title | escape }}"></h1><p id="sub">{{ section.settings.subtitle | escape }}</p><a id="shop" href="{% render 'shop-url' %}">{{ section.settings.shop_label | escape }}</a></div></div>
   <nav id="nav" aria-label="Primary">
     {%- render 'nav-links' -%}
   </nav>
-  <a id="shop" href="{% render 'shop-url' %}">{{ section.settings.shop_label | escape }}</a>
 </main>
 
 <script>
@@ -196,17 +195,20 @@
 
   /* ---------- Morphing hero ---------- */
   const heroCanvas = document.getElementById('morph');
+  const FOCUS_X = {{ section.settings.focus | divided_by: 100.0 }};   // where the necklace sits across the photos; narrow screens centre on it
   const hgl = makeGL(heroCanvas);
   let morphStart = () => {};
   if (hgl) {
     const hp = program(hgl, `
       precision highp float;
-      uniform sampler2D A, B; uniform vec2 r; uniform vec2 tsA, tsB; uniform float m, t;
+      uniform sampler2D A, B; uniform vec2 r; uniform vec2 tsA, tsB; uniform float m, t, fx;
       ${NOISE}
       vec2 cover(vec2 uv, float z, vec2 ts){
         float sa = r.x/r.y, ta = ts.x/ts.y;
         vec2 s = sa > ta ? vec2(1., ta/sa) : vec2(sa/ta, 1.);
-        return (uv - .5) * s / z + .5;
+        float hw = .5 * s.x / z;                                   // half the width of the photo that fits on screen
+        float cx = hw < .5 ? clamp(fx, hw, 1. - hw) : .5;          // look toward the necklace, without running off the photo
+        return (uv - .5) * s / z + vec2(cx, .5);
       }
       // on a tall phone screen the photo is shown whole-ish: pulled back, with a dimmed, softened copy of itself filling above and below
       vec3 softCopy(sampler2D tx, vec2 uv, vec2 ts){
@@ -253,6 +255,7 @@
     };
     let tex = [], sizes = [];
     hgl.uniform1i(uA, 0); hgl.uniform1i(uB, 1);
+    hgl.uniform1f(U('fx'), FOCUS_X);
 
     const HOLD = 300, MORPH = 2200;
     let idx = 0, phaseStart = 0, running = false;
@@ -334,8 +337,9 @@
     { "type": "text", "id": "shop_label", "label": "Shop button", "default": "Shop Now" },
     { "type": "header", "content": "Photos that morph into each other" },
     { "type": "image_picker", "id": "photo_1", "label": "Photo 1", "info": "Leave empty to keep the built-in photo." },
+    { "type": "range", "id": "focus", "label": "Necklace position across the photos", "min": 0, "max": 100, "step": 5, "unit": "%", "default": 70, "info": "Phones show only part of the photo; this is the part they centre on." },
     { "type": "image_picker", "id": "photo_2", "label": "Photo 2" },
-    { "type": "image_picker", "id": "photo_3", "label": "Photo 3" }
+    { "type": "image_picker", "id": "photo_3", "label": "Photo 3", "info": "Optional: a third photo to add to the morph." }
   ]
 }
 {% endschema %}

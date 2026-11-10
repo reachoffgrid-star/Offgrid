@@ -15,7 +15,8 @@
   #hero { position: relative; width: 100%; height: 100vh; height: 100dvh; overflow: hidden; }
   #hero::before { /* vignette */
     content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 45%, rgba(52,58,54,.55) 100%);
+    background: linear-gradient(90deg, rgba(52,58,54,.38), rgba(52,58,54,.1) 45%, transparent 65%),   /* a little shade behind the text */
+                radial-gradient(ellipse at center, transparent 45%, rgba(52,58,54,.5) 100%);
   }
   #hero::after { /* film grain */
     content: ""; position: absolute; inset: -50%; z-index: 3; pointer-events: none; opacity: .09;
@@ -201,6 +202,18 @@
 
   /* ---------- Tagline that melts from one line into the next ---------- */
   #story h2.tagline { font-size: clamp(.9rem, 3.4vw, 2.5rem); letter-spacing: .1em; text-indent: .1em; white-space: nowrap; line-height: 1.3; }
+
+  /* ---------- Hero text on the left, clear of the necklace on the right of the photos ---------- */
+  #stage { place-items: center start; padding-left: clamp(24px, 7vw, 130px); }
+  #shake { display: flex; flex-direction: column; align-items: flex-start; }
+  h1#title { font-size: clamp(1.9rem, 6vw, 6rem); }
+  #sub { position: static; transform: translateY(6px); text-indent: 0; }
+  #sub.in { transform: none; }
+  #shop { position: static; transform: none; margin-top: clamp(1.6rem, 3.4vw, 2.8rem); pointer-events: auto; }
+  @media (max-width: 560px) {
+    #stage { padding-left: 22px; place-items: end start; padding-bottom: max(9vh, 56px); }   /* phones: below the photo, not over it */
+    h1#title { font-size: clamp(1.6rem, 9vw, 2.6rem); }
+  }
 
   .cart-count { display: inline-grid; place-items: center; min-width: 1.7em; height: 1.7em; margin-left: .45em; padding: 0 .45em;
     border-radius: 999px; font-size: .82em; letter-spacing: 0; text-indent: 0; vertical-align: middle;
