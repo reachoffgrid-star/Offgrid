@@ -283,6 +283,7 @@
   dialog.pick { margin: auto; width: min(420px, calc(100vw - 32px)); padding: 0; border: 0; border-radius: 20px;
     background: var(--ivory); color: var(--graphite); box-shadow: 0 24px 60px rgba(30,36,32,.35); font-family: "Cinzel", Georgia, serif; }
   dialog.pick::backdrop { background: rgba(52,58,54,.55); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); }
+  dialog.pick { max-height: calc(100dvh - 32px); overflow: auto; }
   dialog.pick form { padding: 26px 24px 22px; }
   .pick-eyebrow { font-size: .62rem; letter-spacing: .36em; text-transform: uppercase; color: #5f7a5a; }
   dialog.pick h3 { margin: .5rem 0 1.1rem; font-weight: 500; font-size: .95rem; letter-spacing: .12em; text-transform: uppercase; line-height: 1.4; }

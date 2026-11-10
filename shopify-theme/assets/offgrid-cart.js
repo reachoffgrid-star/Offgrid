@@ -2,7 +2,8 @@
    - any button with data-add-to-cart and data-variant-id adds that variant;
      once it is in the cart the button turns into a  −  qty  +  stepper so more can be added
    - a button that also has data-pick="3" is a pack where the customer chooses a colour for each item:
-     it opens a picker, and the choices go into the cart line as "Item 1: White" and so on
+     Add to cart and + open a picker, and the choices go into a cart line of their own as "Item 1: White" and so on;
+     − takes away the pack added last
    - any element with class "cart-count" shows the number of items */
 (() => {
   const root = (window.Shopify && Shopify.routes && Shopify.routes.root) || '/';
@@ -22,6 +23,7 @@
   }));
 
   const line = v => cart.items.find(i => String(i.variant_id) === String(v));
+  const newestLine = line;   // Shopify puts a newly added line at the top of the cart, so the first match is the newest
   const shown = props => Object.entries(props || {}).filter(([k, val]) => k[0] !== '_' && val !== '');
 
   const Cart = {
@@ -62,10 +64,6 @@
   function syncButtons() {
     document.querySelectorAll('[data-add-to-cart]').forEach(b => {
       const q = Cart.qty(b.dataset.variantId);
-      if (b.dataset.pick) {                                    // packs stay a button: every add is a new choice of colours
-        b.textContent = q > 0 ? 'Add another' : 'Add to cart';
-        return;
-      }
       let st = b.nextElementSibling;
       if (!st || !st.classList.contains('qty-step')) {
         st = document.createElement('div');
@@ -132,7 +130,11 @@
         pickColours(Number(add.dataset.pick), colours, add.dataset.name || '').then(props => {
           if (!props) return add.focus();
           add.disabled = true;
-          Cart.add(add.dataset.variantId, 1, props).then(() => { add.disabled = false; add.focus(); });
+          Cart.add(add.dataset.variantId, 1, props).then(() => {
+            add.disabled = false;
+            const inc = add.nextElementSibling && add.nextElementSibling.querySelector('[data-inc]');
+            if (inc && add.hidden) inc.focus();
+          });
         });
         return;
       }
@@ -145,6 +147,19 @@
       return;
     }
     const step = e.target.closest('.qty-step [data-inc], .qty-step [data-dec]');
+    if (step && step.closest('.qty-step').previousElementSibling.dataset.pick) {
+      const b = step.closest('.qty-step').previousElementSibling, v = b.dataset.variantId;
+      if (step.hasAttribute('data-inc')) {
+        const colours = (b.dataset.colours || 'White,Blush Pink').split(',').map(s => s.trim());
+        pickColours(Number(b.dataset.pick), colours, b.dataset.name || '').then(props => {
+          if (props) Cart.add(v, 1, props).then(() => step.focus()); else step.focus();
+        });
+      } else {
+        const l = newestLine(v);
+        if (l) Cart.setLineQty(l.key, l.quantity - 1).then(() => { if (!Cart.qty(v)) b.focus(); });
+      }
+      return;
+    }
     if (step) {
       const st = step.closest('.qty-step'), b = st.previousElementSibling, v = b.dataset.variantId;
       const out = st.querySelector('output'), next = Number(out.textContent) + (step.hasAttribute('data-inc') ? 1 : -1);
