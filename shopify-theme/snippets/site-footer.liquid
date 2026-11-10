@@ -1,0 +1,29 @@
+{%- comment -%}
+  The footer on every page: contact details (Theme settings → Contact) and links to the store's published policies.
+  Phone and social handle only show once they are filled in.
+{%- endcomment -%}
+<footer id="contact" aria-label="Contact and policies">
+  <div class="row">
+    <div class="brand">{{ settings.brand_name | upcase | escape }}</div>
+    {%- if settings.contact_email != blank -%}
+      <div><h4>Email</h4><p><a href="mailto:{{ settings.contact_email | escape }}">{{ settings.contact_email | escape }}</a></p></div>
+    {%- endif -%}
+    {%- if settings.contact_phone != blank -%}
+      <div><h4>Phone</h4><p><a href="tel:{{ settings.contact_phone | remove: ' ' | escape }}">{{ settings.contact_phone | escape }}</a></p></div>
+    {%- endif -%}
+    {%- if settings.contact_handle != blank -%}
+      <div><h4>Follow</h4><p>{% if settings.contact_social_url != blank %}<a href="{{ settings.contact_social_url }}" rel="noopener" target="_blank">{{ settings.contact_handle | escape }}</a>{% else %}{{ settings.contact_handle | escape }}{% endif %}</p></div>
+    {%- endif -%}
+    {%- if shop.policies.size > 0 -%}
+      <div>
+        <h4>Policies</h4>
+        <ul>
+          {%- for policy in shop.policies -%}
+            <li><a href="{{ policy.url }}">{{ policy.title | escape }}</a></li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    {%- endif -%}
+  </div>
+  <p class="fine">&copy; {{ 'now' | date: '%Y' }} {{ settings.brand_name | upcase | escape }}. {{ settings.footer_line | escape }}</p>
+</footer>

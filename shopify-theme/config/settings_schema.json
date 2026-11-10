@@ -17,5 +17,17 @@
         "info": "Leave empty to show every product, in the order they were added."
       }
     ]
+  },
+  {
+    "name": "Contact and footer",
+    "settings": [
+      { "type": "text", "id": "brand_name", "label": "Brand name", "default": "OFFGRID" },
+      { "type": "text", "id": "contact_email", "label": "Email", "default": "reach.offgrid@gmail.com" },
+      { "type": "text", "id": "contact_phone", "label": "Phone", "info": "Shown in the footer once filled in." },
+      { "type": "text", "id": "contact_handle", "label": "Social handle", "info": "For example @offgrid. Shown once filled in." },
+      { "type": "url", "id": "contact_social_url", "label": "Social profile link" },
+      { "type": "text", "id": "footer_line", "label": "Line after the copyright", "default": "Own your breath." },
+      { "type": "paragraph", "content": "The Policies column lists every policy published under Settings → Policies." }
+    ]
   }
 ]

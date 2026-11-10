@@ -157,24 +157,24 @@
     border: 1px solid var(--graphite); background: var(--graphite); transition: background .4s, color .4s, border-color .4s; }
   .cta:hover, .cta:focus-visible { background: var(--moss); color: var(--ivory); border-color: var(--moss); outline: none; }
 
-  #contact { padding: clamp(36px, 5vw, 56px) clamp(20px, 5vw, 64px) 28px; background: var(--graphite); border-top: 1px solid rgba(247,243,233,.12);
-    font-family: "Cinzel", Georgia, serif; }
-  #contact .row { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 1.2fr repeat(3, minmax(0, 1fr)); gap: 24px; align-items: start; }
-  #contact .brand { font-size: 1.15rem; letter-spacing: .4em; color: var(--ivory); }
-  #contact h4 { font-weight: 500; font-size: .66rem; letter-spacing: .3em; text-transform: uppercase; color: var(--cyan); }
-  #contact p { margin-top: .55rem; font-family: Georgia, "Times New Roman", serif; font-size: .92rem; color: rgba(243,239,247,.7); }
+  /* ---------- Footer on every page: contact and policies ---------- */
+  #contact { padding: clamp(36px, 5vw, 56px) clamp(20px, 5vw, 64px) 28px; background: #343A36; border-top: 1px solid rgba(247,243,233,.12);
+    font-family: "Cinzel", Georgia, serif; color: #F7F3E9; }
+  #contact .row { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 28px clamp(28px, 5vw, 72px); align-items: flex-start; }
+  #contact .brand { flex: 1 1 180px; font-size: 1.15rem; letter-spacing: .4em; color: #F7F3E9; }
+  #contact h4 { font-weight: 500; font-size: .66rem; letter-spacing: .3em; text-transform: uppercase; color: #A9BCA5; }
+  #contact p, #contact li { margin-top: .55rem; font-family: Georgia, "Times New Roman", serif; font-size: .92rem; color: rgba(247,243,233,.75); }
+  #contact ul { list-style: none; }
   #contact a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(169,188,165,.55); transition: color .3s, border-color .3s; }
-  #contact a:hover, #contact a:focus-visible { color: #fff; border-color: var(--cyan); outline: none; }
+  #contact a:hover, #contact a:focus-visible { color: #fff; border-color: #A9BCA5; outline: none; }
   #contact .fine { max-width: 1100px; margin: 28px auto 0; padding-top: 18px; border-top: 1px solid rgba(247,243,233,.1);
-    font-size: .6rem; letter-spacing: .24em; text-transform: uppercase; color: rgba(243,239,247,.4); text-align: center; }
+    font-size: .6rem; letter-spacing: .24em; text-transform: uppercase; color: rgba(247,243,233,.45); text-align: center; }
 
   .reveal { opacity: 0; transform: translateY(24px); transition: opacity 1s ease, transform 1s cubic-bezier(.2,.8,.2,1); }
   .reveal.in { opacity: 1; transform: none; }
 
   @media (max-width: 720px) {
     .trio { grid-template-columns: 1fr; }
-    #contact .row { grid-template-columns: 1fr 1fr; }
-    #contact .brand { grid-column: 1 / -1; }
     #sub { letter-spacing: .34em; text-indent: .34em; }
   }
 

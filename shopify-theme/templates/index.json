@@ -79,16 +79,11 @@
         "p1"
       ],
       "settings": {}
-    },
-    "footer": {
-      "type": "contact-footer",
-      "settings": {}
     }
   },
   "order": [
     "hero",
     "story",
-    "founders",
-    "footer"
+    "founders"
   ]
 }

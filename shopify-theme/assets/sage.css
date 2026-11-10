@@ -302,3 +302,28 @@
   .pick-actions button.ghost { background: transparent; color: var(--graphite); border-color: rgba(52,58,54,.4); }
   .pick-actions button.ghost:hover, .pick-actions button.ghost:focus-visible { background: rgba(169,188,165,.35); }
   .unit.picks { font-size: .82rem; color: rgba(52,58,54,.75); }
+
+  /* ---------- Footer on every page: contact and policies ---------- */
+  #contact { padding: clamp(36px, 5vw, 56px) clamp(20px, 5vw, 64px) 28px; background: #343A36; border-top: 1px solid rgba(247,243,233,.12);
+    font-family: "Cinzel", Georgia, serif; color: #F7F3E9; }
+  #contact .row { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 28px clamp(28px, 5vw, 72px); align-items: flex-start; }
+  #contact .brand { flex: 1 1 180px; font-size: 1.15rem; letter-spacing: .4em; color: #F7F3E9; }
+  #contact h4 { font-weight: 500; font-size: .66rem; letter-spacing: .3em; text-transform: uppercase; color: #A9BCA5; }
+  #contact p, #contact li { margin-top: .55rem; font-family: Georgia, "Times New Roman", serif; font-size: .92rem; color: rgba(247,243,233,.75); }
+  #contact ul { list-style: none; }
+  #contact a { color: inherit; text-decoration: none; border-bottom: 1px solid rgba(169,188,165,.55); transition: color .3s, border-color .3s; }
+  #contact a:hover, #contact a:focus-visible { color: #fff; border-color: #A9BCA5; outline: none; }
+  #contact .fine { max-width: 1100px; margin: 28px auto 0; padding-top: 18px; border-top: 1px solid rgba(247,243,233,.1);
+    font-size: .6rem; letter-spacing: .24em; text-transform: uppercase; color: rgba(247,243,233,.45); text-align: center; }
+
+  /* ---------- Policy pages (refund, privacy, terms, shipping, contact) ---------- */
+  .shopify-policy__container { max-width: 860px !important; margin: 0 auto; padding: clamp(36px, 6vw, 72px) clamp(16px, 4vw, 48px) clamp(56px, 8vw, 100px) !important; }
+  .shopify-policy__title { text-align: center; margin-bottom: clamp(22px, 3vw, 36px); }
+  .shopify-policy__title h1 { font-weight: 400; font-size: clamp(1.3rem, 3.4vw, 2.2rem); letter-spacing: .16em; text-indent: .16em; text-transform: uppercase; color: var(--graphite); }
+  .shopify-policy__body { padding: clamp(22px, 4vw, 44px); border-radius: 18px; background: var(--ivory); border: 1px solid rgba(52,58,54,.12); box-shadow: 0 8px 24px rgba(52,58,54,.1);
+    font-family: Georgia, "Times New Roman", serif; font-size: 1rem; line-height: 1.8; color: rgba(52,58,54,.88); }
+  .shopify-policy__body > * + *, .shopify-policy__body .rte > * + * { margin-top: .9rem; }
+  .shopify-policy__body h2, .shopify-policy__body h3, .shopify-policy__body strong { color: var(--graphite); }
+  .shopify-policy__body h2, .shopify-policy__body h3 { font-family: "Cinzel", Georgia, serif; font-weight: 500; letter-spacing: .08em; margin-top: 1.6rem; }
+  .shopify-policy__body ul, .shopify-policy__body ol { padding-left: 1.3em; }
+  .shopify-policy__body a { color: #4d6649; }
